@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   HttpStatus,
   HttpCode,
+  UseFilters,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,9 +22,11 @@ import {
 import { ContactsService } from './contacts.service';
 import { Contact } from './contacts.entity';
 import { CreateContactDto, UpdateContactDto } from './contacts.dto';
+import { ContactsExceptionFilter } from './contacts.exceptions';
 
 @ApiTags('Contacts')
 @Controller('contacts')
+@UseFilters(ContactsExceptionFilter)
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
@@ -33,6 +36,10 @@ export class ContactsController {
     status: HttpStatus.CREATED,
     description: 'The contact has been successfully created.',
     type: Contact,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Contact with this email already exists.',
   })
   create(@Body() createContactDto: CreateContactDto): Promise<Contact> {
     return this.contactsService.create(createContactDto);
@@ -62,6 +69,10 @@ export class ContactsController {
     status: HttpStatus.OK,
     description: 'Returns an array of matching contacts',
     type: [Contact],
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid search query',
   })
   search(@Query('query') query: string): Promise<Contact[]> {
     return this.contactsService.search(query);
@@ -94,6 +105,10 @@ export class ContactsController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Contact not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Contact with this email already exists.',
   })
   update(
     @Param('id', ParseIntPipe) id: number,

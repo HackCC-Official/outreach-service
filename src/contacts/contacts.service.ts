@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Contact } from './contacts.entity';
-import { CreateContactDto } from './contacts.dto';
-import { UpdateContactDto } from './contacts.dto';
+import { CreateContactDto, UpdateContactDto } from './contacts.dto';
+import {
+  ContactNotFoundException,
+  DuplicateContactException,
+  InvalidContactDataException,
+} from './contacts.exceptions';
 
 @Injectable()
 export class ContactsService {
@@ -15,6 +19,14 @@ export class ContactsService {
    * @returns The created contact
    */
   create(createContactDto: CreateContactDto): Promise<Contact> {
+    // Check for duplicate email
+    const existingContact = this.contacts.find(
+      (c) => c.email.toLowerCase() === createContactDto.email.toLowerCase(),
+    );
+    if (existingContact) {
+      throw new DuplicateContactException(createContactDto.email);
+    }
+
     const contact = new Contact();
     Object.assign(contact, {
       id: this.currentId++,
@@ -43,12 +55,12 @@ export class ContactsService {
   /**
    * Find a contact by ID
    * @param id - The contact ID
-   * @returns The found contact or throws NotFoundException
+   * @returns The found contact or throws ContactNotFoundException
    */
   findOne(id: number): Promise<Contact> {
     const contact = this.contacts.find((c) => c.id === id);
     if (!contact) {
-      throw new NotFoundException(`Contact with ID ${id} not found`);
+      throw new ContactNotFoundException(id);
     }
     return Promise.resolve(contact);
   }
@@ -64,6 +76,19 @@ export class ContactsService {
     updateContactDto: UpdateContactDto,
   ): Promise<Contact> {
     const contact = await this.findOne(id);
+
+    // Check for duplicate email if email is being updated
+    if (updateContactDto.email !== undefined) {
+      const existingContact = this.contacts.find(
+        (c) =>
+          c.email.toLowerCase() === updateContactDto.email!.toLowerCase() &&
+          c.id !== id,
+      );
+      if (existingContact) {
+        throw new DuplicateContactException(updateContactDto.email);
+      }
+    }
+
     Object.assign(contact, {
       ...updateContactDto,
       updatedAt: new Date(),
@@ -79,7 +104,7 @@ export class ContactsService {
   remove(id: number): Promise<void> {
     const index = this.contacts.findIndex((c) => c.id === id);
     if (index === -1) {
-      throw new NotFoundException(`Contact with ID ${id} not found`);
+      throw new ContactNotFoundException(id);
     }
     this.contacts.splice(index, 1);
     return Promise.resolve();
@@ -91,6 +116,10 @@ export class ContactsService {
    * @returns Array of matching contacts
    */
   search(query: string): Promise<Contact[]> {
+    if (!query || query.trim().length === 0) {
+      throw new InvalidContactDataException(['Search query cannot be empty']);
+    }
+
     const lowercaseQuery = query.toLowerCase();
     const results = this.contacts
       .filter(
