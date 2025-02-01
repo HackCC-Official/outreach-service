@@ -19,6 +19,23 @@ export class ContactsService {
    * @returns The created contact
    */
   create(createContactDto: CreateContactDto): Promise<Contact> {
+    // Validate required fields
+    if (!createContactDto || !createContactDto.email) {
+      throw new InvalidContactDataException(['Email is required']);
+    }
+
+    if (!createContactDto.name) {
+      throw new InvalidContactDataException(['Name is required']);
+    }
+
+    if (!createContactDto.company) {
+      throw new InvalidContactDataException(['Company is required']);
+    }
+
+    if (!createContactDto.role) {
+      throw new InvalidContactDataException(['Role is required']);
+    }
+
     // Check for duplicate email
     const existingContact = this.contacts.find(
       (c) => c.email.toLowerCase() === createContactDto.email.toLowerCase(),

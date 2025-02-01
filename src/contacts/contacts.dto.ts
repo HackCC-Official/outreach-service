@@ -1,15 +1,11 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  PartialType,
-  OmitType,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsString,
   IsEmail,
   IsOptional,
   IsPhoneNumber,
   IsUrl,
+  IsNotEmpty,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -18,13 +14,15 @@ export class CreateContactDto {
     example: 'John Doe',
   })
   @IsString()
+  @IsNotEmpty({ message: 'Name is required' })
   name: string;
 
   @ApiProperty({
     description: 'The email address of the contact',
     example: 'john.doe@example.com',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
   @ApiProperty({
@@ -32,6 +30,7 @@ export class CreateContactDto {
     example: 'Acme Corporation',
   })
   @IsString()
+  @IsNotEmpty({ message: 'Company is required' })
   company: string;
 
   @ApiProperty({
@@ -39,13 +38,14 @@ export class CreateContactDto {
     example: 'Software Engineer',
   })
   @IsString()
+  @IsNotEmpty({ message: 'Role is required' })
   role: string;
 
   @ApiPropertyOptional({
     description: 'The phone number of the contact',
     example: '+1234567890',
   })
-  @IsPhoneNumber()
+  @IsPhoneNumber(undefined, { message: 'Invalid phone number format' })
   @IsOptional()
   phone?: string;
 
@@ -53,7 +53,7 @@ export class CreateContactDto {
     description: 'The LinkedIn profile URL of the contact',
     example: 'https://linkedin.com/in/johndoe',
   })
-  @IsUrl()
+  @IsUrl({}, { message: 'Invalid LinkedIn URL format' })
   @IsOptional()
   linkedin?: string;
 
@@ -66,7 +66,5 @@ export class CreateContactDto {
   notes?: string;
 }
 
-// UpdateContactDto makes all fields optional by extending PartialType
-export class UpdateContactDto extends PartialType(
-  OmitType(CreateContactDto, [] as const),
-) {}
+// UpdateContactDto makes all fields optional
+export class UpdateContactDto extends PartialType(CreateContactDto) {}

@@ -1,13 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 
 /**
  * Bootstrap the NestJS application with Swagger documentation
  */
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
+
+  // Enable validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip properties that don't have decorators
+      transform: true, // Transform payloads to DTO instances
+      forbidNonWhitelisted: true, // Throw errors when non-whitelisted values are provided
+      transformOptions: {
+        enableImplicitConversion: true, // Automatically transform query parameters
+      },
+    }),
+  );
 
   // Configure Swagger documentation
   const config = new DocumentBuilder()
