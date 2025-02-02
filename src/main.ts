@@ -3,6 +3,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 
+// Load environment variables from .env file
+
 /**
  * Bootstrap the NestJS application with Swagger documentation
  */

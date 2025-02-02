@@ -6,53 +6,54 @@ import {
   DuplicateContactException,
   InvalidContactDataException,
 } from './contacts.exceptions';
+import { supabase } from '../config/supabase.config';
+import {
+  PostgrestResponse,
+  PostgrestSingleResponse,
+} from '@supabase/supabase-js';
 
 @Injectable()
 export class ContactsService {
-  // In-memory store for contacts
-  private contacts: Contact[] = [];
-  private currentId = 1;
+  private readonly TABLE_NAME = 'Contacts';
 
   /**
    * Create a new contact
    * @param createContactDto - The contact data to create
    * @returns The created contact
    */
-  create(createContactDto: CreateContactDto): Promise<Contact> {
-    // Validate required fields
-    if (!createContactDto || !createContactDto.email) {
-      throw new InvalidContactDataException(['Email is required']);
-    }
-
-    if (!createContactDto.name) {
-      throw new InvalidContactDataException(['Name is required']);
-    }
-
-    if (!createContactDto.company) {
-      throw new InvalidContactDataException(['Company is required']);
-    }
-
-    if (!createContactDto.role) {
-      throw new InvalidContactDataException(['Role is required']);
-    }
-
+  async create(createContactDto: CreateContactDto): Promise<Contact> {
     // Check for duplicate email
-    const existingContact = this.contacts.find(
-      (c) => c.email.toLowerCase() === createContactDto.email.toLowerCase(),
-    );
+    const {
+      data: existingContact,
+    }: PostgrestSingleResponse<Pick<Contact, 'email'>> = await supabase
+      .from(this.TABLE_NAME)
+      .select('email')
+      .eq('email', createContactDto.email.toLowerCase())
+      .single();
+
     if (existingContact) {
       throw new DuplicateContactException(createContactDto.email);
     }
 
-    const contact = new Contact();
-    Object.assign(contact, {
-      id: this.currentId++,
-      ...createContactDto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    this.contacts.push(contact);
-    return Promise.resolve(contact);
+    const { data, error }: PostgrestSingleResponse<Contact> = await supabase
+      .from(this.TABLE_NAME)
+      .insert([
+        {
+          ...createContactDto,
+          email: createContactDto.email.toLowerCase(),
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new InvalidContactDataException([
+        error?.message || 'Failed to create contact',
+      ]);
+    }
+
+    return data;
   }
 
   /**
@@ -61,12 +62,18 @@ export class ContactsService {
    * @param take - Number of records to take
    * @returns Array of contacts and total count
    */
-  findAll(skip = 0, take = 10): Promise<[Contact[], number]> {
-    const total = this.contacts.length;
-    const data = this.contacts
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(skip, skip + take);
-    return Promise.resolve([data, total]);
+  async findAll(skip = 0, take = 10): Promise<[Contact[], number]> {
+    const { data, error, count }: PostgrestResponse<Contact> = await supabase
+      .from(this.TABLE_NAME)
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(skip, skip + take - 1);
+
+    if (error) {
+      throw new InvalidContactDataException([error.message]);
+    }
+
+    return [data || [], count || 0];
   }
 
   /**
@@ -74,12 +81,18 @@ export class ContactsService {
    * @param id - The contact ID
    * @returns The found contact or throws ContactNotFoundException
    */
-  findOne(id: number): Promise<Contact> {
-    const contact = this.contacts.find((c) => c.id === id);
-    if (!contact) {
+  async findOne(id: number): Promise<Contact> {
+    const { data, error }: PostgrestSingleResponse<Contact> = await supabase
+      .from(this.TABLE_NAME)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
       throw new ContactNotFoundException(id);
     }
-    return Promise.resolve(contact);
+
+    return data;
   }
 
   /**
@@ -92,25 +105,43 @@ export class ContactsService {
     id: number,
     updateContactDto: UpdateContactDto,
   ): Promise<Contact> {
-    const contact = await this.findOne(id);
+    // Check if contact exists
+    await this.findOne(id);
 
     // Check for duplicate email if email is being updated
     if (updateContactDto.email !== undefined) {
-      const existingContact = this.contacts.find(
-        (c) =>
-          c.email.toLowerCase() === updateContactDto.email!.toLowerCase() &&
-          c.id !== id,
-      );
+      const {
+        data: existingContact,
+      }: PostgrestSingleResponse<Pick<Contact, 'id'>> = await supabase
+        .from(this.TABLE_NAME)
+        .select('id')
+        .eq('email', updateContactDto.email.toLowerCase())
+        .neq('id', id)
+        .single();
+
       if (existingContact) {
         throw new DuplicateContactException(updateContactDto.email);
       }
     }
 
-    Object.assign(contact, {
-      ...updateContactDto,
-      updatedAt: new Date(),
-    });
-    return Promise.resolve(contact);
+    const { data, error }: PostgrestSingleResponse<Contact> = await supabase
+      .from(this.TABLE_NAME)
+      .update({
+        ...updateContactDto,
+        email: updateContactDto.email?.toLowerCase(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new InvalidContactDataException([
+        error?.message || 'Failed to update contact',
+      ]);
+    }
+
+    return data;
   }
 
   /**
@@ -118,13 +149,18 @@ export class ContactsService {
    * @param id - The contact ID
    * @returns void
    */
-  remove(id: number): Promise<void> {
-    const index = this.contacts.findIndex((c) => c.id === id);
-    if (index === -1) {
-      throw new ContactNotFoundException(id);
+  async remove(id: number): Promise<void> {
+    // Check if contact exists
+    await this.findOne(id);
+
+    const { error } = await supabase
+      .from(this.TABLE_NAME)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new InvalidContactDataException([error.message]);
     }
-    this.contacts.splice(index, 1);
-    return Promise.resolve();
   }
 
   /**
@@ -132,21 +168,25 @@ export class ContactsService {
    * @param query - The search query
    * @returns Array of matching contacts
    */
-  search(query: string): Promise<Contact[]> {
+  async search(query: string): Promise<Contact[]> {
     if (!query || query.trim().length === 0) {
       throw new InvalidContactDataException(['Search query cannot be empty']);
     }
 
-    const lowercaseQuery = query.toLowerCase();
-    const results = this.contacts
-      .filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(lowercaseQuery) ||
-          contact.email.toLowerCase().includes(lowercaseQuery) ||
-          contact.company.toLowerCase().includes(lowercaseQuery),
+    const searchQuery = `%${query.toLowerCase()}%`;
+    const { data, error }: PostgrestResponse<Contact> = await supabase
+      .from(this.TABLE_NAME)
+      .select('*')
+      .or(
+        `name.ilike.${searchQuery},email.ilike.${searchQuery},company.ilike.${searchQuery}`,
       )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 10);
-    return Promise.resolve(results);
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      throw new InvalidContactDataException([error.message]);
+    }
+
+    return data || [];
   }
 }

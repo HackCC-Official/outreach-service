@@ -1,12 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import {
-  IsString,
-  IsEmail,
-  IsOptional,
-  IsPhoneNumber,
-  IsUrl,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class CreateContactDto {
   @ApiProperty({
@@ -43,9 +36,8 @@ export class CreateContactDto {
 
   @ApiPropertyOptional({
     description: 'The phone number of the contact',
-    example: '+1234567890',
+    example: '1234567890',
   })
-  @IsPhoneNumber(undefined, { message: 'Invalid phone number format' })
   @IsOptional()
   phone?: string;
 
@@ -53,7 +45,6 @@ export class CreateContactDto {
     description: 'The LinkedIn profile URL of the contact',
     example: 'https://linkedin.com/in/johndoe',
   })
-  @IsUrl({}, { message: 'Invalid LinkedIn URL format' })
   @IsOptional()
   linkedin?: string;
 
