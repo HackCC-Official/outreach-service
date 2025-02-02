@@ -11,6 +11,9 @@ import {
   HttpStatus,
   HttpCode,
   UseFilters,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,11 +21,15 @@ import {
   ApiResponse,
   ApiQuery,
   ApiParam,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ContactsService } from './contacts.service';
 import { Contact } from './contacts.entity';
 import { CreateContactDto, UpdateContactDto } from './contacts.dto';
 import { ContactsExceptionFilter } from './contacts.exceptions';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadFileDto } from './upload-file.dto';
 
 @ApiTags('Contacts')
 @Controller('contacts')
@@ -43,6 +50,24 @@ export class ContactsController {
   })
   create(@Body() createContactDto: CreateContactDto): Promise<Contact> {
     return this.contactsService.create(createContactDto);
+  }
+
+  @Post('upload')
+  @ApiOperation({ summary: 'Upload contacts from CSV file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'CSV file to upload',
+    type: UploadFileDto,
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
+    if (!file || typeof file !== 'object') {
+      throw new BadRequestException('Invalid file upload');
+    }
+    const uploadedFile = file as { buffer: Buffer };
+    return await this.contactsService.uploadContacts(uploadedFile.buffer);
   }
 
   @Get()

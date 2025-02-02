@@ -6,7 +6,7 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 export class ContactNotFoundException extends HttpException {
   constructor(id: number) {
@@ -34,13 +34,14 @@ export class ContactsExceptionFilter implements ExceptionFilter {
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
     const status = exception.getStatus();
     const error = exception.getResponse();
 
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: ctx.getRequest().url,
+      path: request.url,
       error: typeof error === 'string' ? { message: error } : error,
     });
   }
