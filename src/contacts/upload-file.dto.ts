@@ -1,13 +1,13 @@
 /*
  * DTO for uploading a CSV file.
  */
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UploadFileDto {
   @ApiProperty({
-    type: "string",
-    format: "binary",
-    description: "CSV file to upload",
+    type: 'string',
+    format: 'binary',
+    description: 'CSV file to upload',
   })
   file!: Buffer;
-} 
+}

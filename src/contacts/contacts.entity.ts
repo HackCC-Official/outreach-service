@@ -8,49 +8,145 @@ export class Contact {
   id: number;
 
   @ApiProperty({
-    description: 'The full name of the contact',
-    example: 'John Doe',
-  })
-  name: string;
-
-  @ApiProperty({
     description: 'The email address of the contact',
     example: 'john.doe@example.com',
   })
   email: string;
 
   @ApiProperty({
-    description: 'The company where the contact works',
+    description: 'The domain name extracted from email',
+    example: 'example.com',
+  })
+  domain_name: string;
+
+  @ApiProperty({
+    description: 'The organization/company name',
     example: 'Acme Corporation',
   })
-  company: string;
+  organization: string;
 
   @ApiProperty({
-    description: 'The role/position of the contact',
-    example: 'Software Engineer',
-  })
-  role: string;
-
-  @ApiProperty({
-    description: 'The phone number of the contact',
-    example: '+1234567890',
+    description: 'The country of the contact',
+    example: 'United States',
     required: false,
   })
-  phone?: string;
+  country?: string;
 
   @ApiProperty({
-    description: 'The LinkedIn profile URL of the contact',
+    description: 'The state/province of the contact',
+    example: 'California',
+    required: false,
+  })
+  state?: string;
+
+  @ApiProperty({
+    description: 'The city of the contact',
+    example: 'San Francisco',
+    required: false,
+  })
+  city?: string;
+
+  @ApiProperty({
+    description: 'The postal code of the contact',
+    example: '94105',
+    required: false,
+  })
+  postal_code?: string;
+
+  @ApiProperty({
+    description: 'The street address of the contact',
+    example: '123 Main St',
+    required: false,
+  })
+  street?: string;
+
+  @ApiProperty({
+    description: 'Confidence score of the contact data',
+    example: 0.95,
+    required: false,
+  })
+  confidence_score?: number;
+
+  @ApiProperty({
+    description: 'Type of contact',
+    example: 'Business',
+    required: false,
+  })
+  type?: string;
+
+  @ApiProperty({
+    description: 'Number of sources this contact was found in',
+    example: 3,
+    required: false,
+  })
+  number_of_sources?: number;
+
+  @ApiProperty({
+    description: 'Pattern used to identify this contact',
+    example: 'firstname.lastname@domain.com',
+    required: false,
+  })
+  pattern?: string;
+
+  @ApiProperty({
+    description: 'First name of the contact',
+    example: 'John',
+  })
+  first_name: string;
+
+  @ApiProperty({
+    description: 'Last name of the contact',
+    example: 'Doe',
+  })
+  last_name: string;
+
+  @ApiProperty({
+    description: 'Department of the contact',
+    example: 'Engineering',
+    required: false,
+  })
+  department?: string;
+
+  @ApiProperty({
+    description: 'Position/role of the contact',
+    example: 'Software Engineer',
+  })
+  position: string;
+
+  @ApiProperty({
+    description: 'Twitter handle of the contact',
+    example: '@johndoe',
+    required: false,
+  })
+  twitter_handle?: string;
+
+  @ApiProperty({
+    description: 'LinkedIn URL of the contact',
     example: 'https://linkedin.com/in/johndoe',
     required: false,
   })
-  linkedin?: string;
+  linkedin_url?: string;
 
   @ApiProperty({
-    description: 'Additional notes about the contact',
-    example: 'Met at tech conference',
+    description: 'Phone number of the contact',
+    example: '+1234567890',
     required: false,
   })
-  notes?: string;
+  phone_number?: string;
+
+  @ApiProperty({
+    description: 'Type of company',
+    example: 'Corporation',
+    required: false,
+  })
+  company_type?: string;
+
+  @ApiProperty({
+    description: 'Industry of the company',
+    example: 'Technology',
+    required: false,
+  })
+  industry?: string;
 
   @ApiProperty({
     description: 'The timestamp when the contact was created',

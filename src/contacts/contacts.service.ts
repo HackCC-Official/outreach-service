@@ -14,7 +14,7 @@ import { parse } from 'csv-parse/sync';
 
 @Injectable()
 export class ContactsService {
-  private readonly TABLE_NAME = 'Contacts';
+  private readonly TABLE_NAME = 'outreach_contacts';
 
   /**
    * Normalizes an email address by trimming whitespace and converting to lower case.
@@ -220,13 +220,27 @@ export class ContactsService {
     fileBuffer: Buffer,
   ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
     interface ParsedContactRow {
-      name: string;
-      email: string;
-      company: string;
-      role: string;
-      phone?: string;
-      linkedin?: string;
-      notes?: string;
+      'Email address': string;
+      'Domain name': string;
+      Organization: string;
+      Country: string;
+      State: string;
+      City: string;
+      'Postal code': string;
+      Street: string;
+      'Confidence score': string;
+      Type: string;
+      'Number of sources': string;
+      Pattern: string;
+      'First name': string;
+      'Last name': string;
+      Department: string;
+      Position: string;
+      'Twitter handle': string;
+      'LinkedIn URL': string;
+      'Phone number': string;
+      'Company type': string;
+      Industry: string;
     }
 
     let rows: ParsedContactRow[];
@@ -235,9 +249,14 @@ export class ContactsService {
         columns: true,
         trim: true,
         skip_empty_lines: true,
+        relaxColumnCount: true,
       });
-    } catch {
-      throw new InvalidContactDataException(['Failed to parse CSV file']);
+      console.log('Parsed CSV rows:', JSON.stringify(rows[0], null, 2));
+    } catch (error) {
+      console.error('CSV parsing error:', error);
+      throw new InvalidContactDataException([
+        `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      ]);
     }
 
     const createdContacts: Contact[] = [];
@@ -245,36 +264,84 @@ export class ContactsService {
 
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
-      if (!row.name || !row.email || !row.company || !row.role) {
-        errors.push(
-          `Row ${index + 1}: Missing required fields. Required: name, email, company, role.`,
-        );
-        continue;
-      }
       try {
-        const contact = await this.create({
-          name: row.name,
-          email: row.email,
-          company: row.company,
-          role: row.role,
-          phone: row.phone,
-          linkedin: row.linkedin,
-          notes: row.notes,
-        });
-        createdContacts.push(contact);
-      } catch (error: unknown) {
-        let errorMsg: string;
+        // Log the raw row data
+        console.log(
+          `Processing row ${index + 1}:`,
+          JSON.stringify(row, null, 2),
+        );
+
         if (
-          error &&
-          typeof error === 'object' &&
-          'message' in error &&
-          typeof (error as { message: unknown }).message === 'string'
+          !row['Email address'] ||
+          !row['First name'] ||
+          !row['Last name'] ||
+          !row['Position'] ||
+          !row['Organization']
         ) {
-          errorMsg = (error as { message: string }).message;
-        } else {
-          errorMsg = 'Unknown error occurred';
+          const missingFields = [
+            !row['Email address'] ? 'Email address' : null,
+            !row['First name'] ? 'First name' : null,
+            !row['Last name'] ? 'Last name' : null,
+            !row['Position'] ? 'Position' : null,
+            !row['Organization'] ? 'Organization' : null,
+          ].filter(Boolean);
+
+          errors.push(
+            `Row ${index + 1}: Missing required fields: ${missingFields.join(', ')}`,
+          );
+          continue;
         }
-        errors.push(`Row ${index + 1}: ${errorMsg}`);
+
+        const contactData = {
+          email: row['Email address'],
+          domain_name:
+            row['Domain name'] ||
+            new URL(`http://${row['Email address'].split('@')[1]}`).hostname,
+          organization: row['Organization'],
+          country: row['Country'],
+          state: row['State'],
+          city: row['City'],
+          postal_code: row['Postal code'],
+          street: row['Street'],
+          confidence_score: row['Confidence score']
+            ? parseFloat(row['Confidence score'])
+            : undefined,
+          type: row['Type'],
+          number_of_sources: row['Number of sources']
+            ? parseInt(row['Number of sources'], 10)
+            : undefined,
+          pattern: row['Pattern'],
+          first_name: row['First name'],
+          last_name: row['Last name'],
+          department: row['Department'],
+          position: row['Position'],
+          twitter_handle: row['Twitter handle'] || undefined,
+          linkedin_url: row['LinkedIn URL'] || undefined,
+          phone_number: row['Phone number'] || undefined,
+          company_type: row['Company type'],
+          industry: row['Industry'],
+        };
+
+        // Log the processed contact data
+        console.log(
+          `Processed contact data for row ${index + 1}:`,
+          JSON.stringify(contactData, null, 2),
+        );
+
+        const contact = await this.create(contactData);
+        createdContacts.push(contact);
+      } catch (error) {
+        console.error(`Error processing row ${index + 1}:`, error);
+        let errorMessage = 'Unknown error occurred';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (error && typeof error === 'object') {
+          const errorObj = error as { message?: unknown };
+          if (errorObj.message && typeof errorObj.message === 'string') {
+            errorMessage = errorObj.message;
+          }
+        }
+        errors.push(`Row ${index + 1}: ${errorMessage}`);
       }
     }
     return { createdContacts, errors };
