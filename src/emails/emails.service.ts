@@ -23,7 +23,7 @@ export class EmailsService {
   }
 
   /**
-   * Sends a single email using Resend
+   * Sends a   single email using Resend
    * @param sendEmailDto The email data to send
    * @returns The sent email data
    */
