@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is deploying outreach-service to development serve
 on:
   push:
     branches:
-      - development
+      - dev
 jobs:
   build-and-publish:
     name: build and publish image
