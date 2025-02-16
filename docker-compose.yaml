@@ -1,0 +1,15 @@
+services:
+  outreach-service:
+    image: 'ghcr.io/hackcc-official/outreach-service:latest'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - ${PORT}:3000
+    networks:
+      - hackcc-network
+networks:
+  hackcc-network:
+    external: true
