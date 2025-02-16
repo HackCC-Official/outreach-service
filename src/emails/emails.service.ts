@@ -69,20 +69,47 @@ export class EmailsService {
   async sendBatchEmails(
     sendBatchEmailsDto: SendBatchEmailsDto,
   ): Promise<Email[]> {
-    const sentEmails: Email[] = [];
+    try {
+      const batchPayload = sendBatchEmailsDto.emails.map((emailDto) => ({
+        from: emailDto.from,
+        to: emailDto.to.map((recipient) => recipient.email),
+        subject: emailDto.subject,
+        html: emailDto.html,
+        attachments: emailDto.attachments,
+      }));
 
-    for (const emailDto of sendBatchEmailsDto.emails) {
-      try {
-        const sentEmail = await this.sendEmail(emailDto);
-        sentEmails.push(sentEmail);
-      } catch (error: unknown) {
-        console.error(
-          `Failed to send email to ${emailDto.to.map((r) => r.email).join(', ')}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      const response = await this.resend.batch.send(batchPayload);
+
+      if (!response || response.error) {
+        throw new Error(
+          response?.error?.message ?? 'Failed to send batch emails',
         );
       }
-    }
 
-    return sentEmails;
+      const sentEmails: Email[] = sendBatchEmailsDto.emails.map(
+        (emailDto, index) => ({
+          id: `batch-${index}-${Date.now()}`, // Generate a temporary ID since Resend batch doesn't return IDs
+          from: emailDto.from,
+          to: emailDto.to.map((r) => r.email),
+          subject: emailDto.subject,
+          html: emailDto.html,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          status: 'delivered',
+        }),
+      );
+
+      // Store all sent emails
+      sentEmails.forEach((email) => {
+        this.emailStore.set(email.id, email);
+      });
+
+      return sentEmails;
+    } catch (error: unknown) {
+      throw new InternalServerErrorException(
+        `Failed to send batch emails: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   /**
