@@ -83,6 +83,7 @@ export class ContactsService {
           ...createContactDto,
           email: this.normalizeEmail(createContactDto.email),
           created_at: new Date().toISOString(),
+          been_contacted: false,
         },
       ])
       .select()

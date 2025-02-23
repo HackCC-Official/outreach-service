@@ -149,6 +149,13 @@ export class Contact {
   industry?: string;
 
   @ApiProperty({
+    description: 'Whether the contact has been contacted',
+    example: false,
+    default: false,
+  })
+  been_contacted: boolean;
+
+  @ApiProperty({
     description: 'The timestamp when the contact was created',
   })
   created_at: string;

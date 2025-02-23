@@ -190,4 +190,12 @@ export class CreateContactDto {
 }
 
 // UpdateContactDto makes all fields optional
-export class UpdateContactDto extends PartialType(CreateContactDto) {}
+export class UpdateContactDto extends PartialType(CreateContactDto) {
+  @ApiPropertyOptional({
+    description: 'Whether the contact has been contacted',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  been_contacted?: boolean;
+}
