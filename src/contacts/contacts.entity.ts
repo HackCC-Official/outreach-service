@@ -61,8 +61,8 @@ export class Contact {
   street?: string;
 
   @ApiProperty({
-    description: 'Confidence score of the contact data',
-    example: 0.95,
+    description: 'Confidence score of the contact data (1-100)',
+    example: 95,
     required: false,
   })
   confidence_score?: number;

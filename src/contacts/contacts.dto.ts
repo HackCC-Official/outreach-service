@@ -76,12 +76,12 @@ export class CreateContactDto {
   street?: string;
 
   @ApiPropertyOptional({
-    description: 'Confidence score of the contact data',
-    example: 0.95,
+    description: 'Confidence score of the contact data (1-100)',
+    example: 95,
   })
   @IsNumber()
-  @Min(0)
-  @Max(1)
+  @Min(1, { message: 'Confidence score must be at least 1' })
+  @Max(100, { message: 'Confidence score must not exceed 100' })
   @IsOptional()
   confidence_score?: number;
 
