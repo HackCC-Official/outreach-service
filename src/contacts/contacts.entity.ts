@@ -159,10 +159,4 @@ export class Contact {
     description: 'The timestamp when the contact was created',
   })
   created_at: string;
-
-  @ApiProperty({
-    description: 'The timestamp when the contact was last updated',
-    required: false,
-  })
-  updated_at?: string;
 }

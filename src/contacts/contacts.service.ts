@@ -146,9 +146,8 @@ export class ContactsService {
     }
 
     // Build update data object, normalizing email if provided.
-    const updateData: Partial<Contact & { updated_at: string }> = {
+    const updateData: Partial<Contact> = {
       ...updateContactDto,
-      updated_at: new Date().toISOString(),
     };
     if (updateContactDto.email !== undefined) {
       updateData.email = this.normalizeEmail(updateContactDto.email);
