@@ -4,9 +4,15 @@ import { AppService } from './app.service';
 import { ContactsModule } from './contacts/contacts.module';
 import { EmailsModule } from './emails/emails.module';
 import { InterestedUsersModule } from './interested-users/interested-users.module';
+import { OutreachTeamModule } from './outreach-team/outreach-team.module';
 
 @Module({
-  imports: [ContactsModule, EmailsModule, InterestedUsersModule],
+  imports: [
+    ContactsModule,
+    EmailsModule,
+    InterestedUsersModule,
+    OutreachTeamModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
