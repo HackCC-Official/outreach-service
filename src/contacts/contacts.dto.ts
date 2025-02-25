@@ -7,7 +7,6 @@ import {
   IsNumber,
   Min,
   Max,
-  Matches,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -147,9 +146,6 @@ export class CreateContactDto {
     example: '@johndoe',
   })
   @IsString()
-  @Matches(/^@[A-Za-z0-9_]{1,15}$/, {
-    message: 'Invalid Twitter handle format',
-  })
   @IsOptional()
   twitter_handle?: string;
 
@@ -158,9 +154,6 @@ export class CreateContactDto {
     example: 'https://linkedin.com/in/johndoe',
   })
   @IsString()
-  @Matches(/^https:\/\/(?:www\.)?linkedin\.com\/.*$/, {
-    message: 'Invalid LinkedIn URL format',
-  })
   @IsOptional()
   linkedin_url?: string;
 
