@@ -47,5 +47,4 @@ export class CreateOutreachTeamDto {
   school: string;
 }
 
-// UpdateOutreachTeamDto makes all fields optional
 export class UpdateOutreachTeamDto extends PartialType(CreateOutreachTeamDto) {}
