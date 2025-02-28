@@ -11,6 +11,10 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix(
+    process.env.NODE_ENV === 'production' ? 'outreach-service' : '',
+  );
+
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -31,10 +35,18 @@ async function bootstrap(): Promise<void> {
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  const documentFactory = () =>
+    SwaggerModule.createDocument(app, config, { ignoreGlobalPrefix: false });
 
-  await app.listen(process.env.PORT ?? 3000);
+  console.log(process.env.NODE_ENV);
+
+  SwaggerModule.setup(
+    process.env.NODE_ENV === 'production' ? 'outreach-service/docs' : 'docs',
+    app,
+    documentFactory,
+  );
+
+  await app.listen(3000);
 }
 
 bootstrap().catch((error: Error) => {

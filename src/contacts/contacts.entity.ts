@@ -61,8 +61,8 @@ export class Contact {
   street?: string;
 
   @ApiProperty({
-    description: 'Confidence score of the contact data',
-    example: 0.95,
+    description: 'Confidence score of the contact data (1-100)',
+    example: 95,
     required: false,
   })
   confidence_score?: number;
@@ -149,13 +149,14 @@ export class Contact {
   industry?: string;
 
   @ApiProperty({
+    description: 'Whether the contact has been contacted',
+    example: false,
+    default: false,
+  })
+  been_contacted: boolean;
+
+  @ApiProperty({
     description: 'The timestamp when the contact was created',
   })
   created_at: string;
-
-  @ApiProperty({
-    description: 'The timestamp when the contact was last updated',
-    required: false,
-  })
-  updated_at?: string;
 }

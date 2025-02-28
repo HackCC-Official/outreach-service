@@ -7,7 +7,6 @@ import {
   IsNumber,
   Min,
   Max,
-  Matches,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -76,12 +75,12 @@ export class CreateContactDto {
   street?: string;
 
   @ApiPropertyOptional({
-    description: 'Confidence score of the contact data',
-    example: 0.95,
+    description: 'Confidence score of the contact data (1-100)',
+    example: 95,
   })
   @IsNumber()
-  @Min(0)
-  @Max(1)
+  @Min(1, { message: 'Confidence score must be at least 1' })
+  @Max(100, { message: 'Confidence score must not exceed 100' })
   @IsOptional()
   confidence_score?: number;
 
@@ -147,9 +146,6 @@ export class CreateContactDto {
     example: '@johndoe',
   })
   @IsString()
-  @Matches(/^@[A-Za-z0-9_]{1,15}$/, {
-    message: 'Invalid Twitter handle format',
-  })
   @IsOptional()
   twitter_handle?: string;
 
@@ -158,9 +154,6 @@ export class CreateContactDto {
     example: 'https://linkedin.com/in/johndoe',
   })
   @IsString()
-  @Matches(/^https:\/\/(?:www\.)?linkedin\.com\/.*$/, {
-    message: 'Invalid LinkedIn URL format',
-  })
   @IsOptional()
   linkedin_url?: string;
 
@@ -190,4 +183,12 @@ export class CreateContactDto {
 }
 
 // UpdateContactDto makes all fields optional
-export class UpdateContactDto extends PartialType(CreateContactDto) {}
+export class UpdateContactDto extends PartialType(CreateContactDto) {
+  @ApiPropertyOptional({
+    description: 'Whether the contact has been contacted',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  been_contacted?: boolean;
+}
