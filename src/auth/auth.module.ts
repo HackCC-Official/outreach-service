@@ -8,20 +8,32 @@ import { SupabaseService } from './supabase.service';
 
 @Module({
   imports: [
+    // Ensure ConfigModule is properly configured to load environment variables
+    ConfigModule.forRoot(),
+
+    // PassportModule for authentication strategies
     PassportModule,
-    ConfigModule,
+
+    // JwtModule configured asynchronously using ConfigService
     JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => {
-        return {
-          global: true,
-          secret: configService.get<string>('JWT_SECRET'),
-          signOptions: { expiresIn: 40000 },
-        };
-      },
-      inject: [ConfigService],
+      imports: [ConfigModule], // Import ConfigModule to use ConfigService
+      useFactory: (configService: ConfigService) => ({
+        global: true, // Make JWT module global
+        secret: configService.get<string>('JWT_SECRET'), // Get secret from environment
+        signOptions: { expiresIn: '40000s' }, // Token expiration time
+      }),
+      inject: [ConfigService], // Inject ConfigService
     }),
   ],
-  providers: [JwtAuthGuard, SupabaseStrategy, SupabaseService],
-  exports: [JwtAuthGuard, JwtModule, SupabaseService],
+  providers: [
+    JwtAuthGuard, // Custom JWT guard
+    SupabaseStrategy, // Custom Supabase Passport strategy
+    SupabaseService, // Service for Supabase interactions
+  ],
+  exports: [
+    JwtAuthGuard, // Export JwtAuthGuard for use in other modules
+    JwtModule, // Export JwtModule for use in other modules
+    SupabaseService, // Export SupabaseService for use in other modules
+  ],
 })
 export class AuthModule {}
