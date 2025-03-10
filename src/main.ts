@@ -12,7 +12,9 @@ async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix(
-    process.env.NODE_ENV === 'production' ? 'outreach-service' : '',
+    ['production', 'development'].find((env) => env === process.env.NODE_ENV)
+      ? 'outreach-service'
+      : '',
   );
 
   // Enable validation pipe
@@ -41,7 +43,9 @@ async function bootstrap(): Promise<void> {
   console.log(process.env.NODE_ENV);
 
   SwaggerModule.setup(
-    process.env.NODE_ENV === 'production' ? 'outreach-service/docs' : 'docs',
+    ['production', 'development'].find((env) => env === process.env.NODE_ENV)
+      ? 'outreach-service/docs'
+      : 'docs',
     app,
     documentFactory,
   );
