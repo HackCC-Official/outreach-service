@@ -9,7 +9,7 @@ export class SupabaseService {
   constructor(private configService: ConfigService) {
     this.supabase = createClient(
       configService.get<string>('SUPABASE_URL')!,
-      configService.get<string>('SUPABASE_ANON_KEY')!,
+      configService.get<string>('SERVICE_ROLE')!,
     );
   }
 
