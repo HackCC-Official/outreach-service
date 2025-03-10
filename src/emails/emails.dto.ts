@@ -84,8 +84,22 @@ export class SendEmailDto {
 
 export class SendBatchEmailsDto {
   @ApiProperty({
-    description: 'Array of emails to send',
+    description: 'Array of emails to send in a single batch operation',
     type: [SendEmailDto],
+    example: [
+      {
+        from: 'Company <notifications@example.com>',
+        to: [{ email: 'recipient1@example.com', name: 'John Doe' }],
+        subject: 'First Email Subject',
+        html: '<h1>Hello John</h1><p>This is the first email content.</p>',
+      },
+      {
+        from: 'Company <notifications@example.com>',
+        to: [{ email: 'recipient2@example.com', name: 'Jane Smith' }],
+        subject: 'Second Email Subject',
+        html: '<h1>Hello Jane</h1><p>This is the second email content.</p>',
+      },
+    ],
   })
   @IsArray()
   @ValidateNested({ each: true })
