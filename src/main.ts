@@ -33,7 +33,7 @@ async function bootstrap(): Promise<void> {
   const config = new DocumentBuilder()
     .setTitle('Outreach Service API')
     .setDescription('API documentation for the Outreach Service')
-    .setVersion('1.0.0')
+    .setVersion('1.0.8')
     .addBearerAuth()
     .build();
 
