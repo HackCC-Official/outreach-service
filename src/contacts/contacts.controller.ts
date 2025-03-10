@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,6 +31,10 @@ import { CreateContactDto, UpdateContactDto } from './contacts.dto';
 import { ContactsExceptionFilter } from './contacts.exceptions';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadFileDto } from './upload-file.dto';
+import { JwtAuthGuard } from '../auth/jwt.auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AccountRoles } from '../auth/role.enum';
 
 @ApiTags('Contacts')
 @Controller('contacts')
@@ -48,6 +53,8 @@ export class ContactsController {
     status: HttpStatus.CONFLICT,
     description: 'Contact with this email already exists.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   create(@Body() createContactDto: CreateContactDto): Promise<Contact> {
     return this.contactsService.create(createContactDto);
   }
@@ -60,6 +67,8 @@ export class ContactsController {
     type: UploadFileDto,
   })
   @UseInterceptors(FileInterceptor('file'))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   async upload(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
@@ -79,6 +88,8 @@ export class ContactsController {
     description: 'Returns an array of contacts and total count',
     type: [Contact],
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   async findAll(
     @Query('skip', new ParseIntPipe({ optional: true })) skip?: number,
     @Query('take', new ParseIntPipe({ optional: true })) take?: number,
@@ -99,6 +110,8 @@ export class ContactsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid search query',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   search(@Query('query') query: string): Promise<Contact[]> {
     return this.contactsService.search(query);
   }
@@ -115,6 +128,8 @@ export class ContactsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Contact not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Contact> {
     return this.contactsService.findOne(id);
   }
@@ -135,6 +150,8 @@ export class ContactsController {
     status: HttpStatus.CONFLICT,
     description: 'Contact with this email already exists.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateContactDto: UpdateContactDto,
@@ -154,6 +171,8 @@ export class ContactsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Contact not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.contactsService.remove(id);
   }

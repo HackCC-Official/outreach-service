@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +21,11 @@ import { InterestedUsersService } from './interested-users.service';
 import { InterestedUserDto } from './dto/interested-user.dto';
 import { CreateInterestedUserDto } from './dto/create-interested-user.dto';
 import { plainToInstance } from 'class-transformer';
+import { JwtAuthGuard } from '../auth/jwt.auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AccountRoles } from '../auth/role.enum';
+import { InterestedUsersThrottlerGuard } from './throttler.guard';
 
 /**
  * Controller handling interested users endpoints
@@ -33,6 +39,7 @@ export class InterestedUsersController {
 
   /**
    * Creates a new interested user
+   * This endpoint is publicly accessible but rate-limited by IP address to prevent abuse
    * @param createInterestedUserDto - The data for creating a new interested user
    * @returns The created interested user
    */
@@ -53,6 +60,12 @@ export class InterestedUsersController {
     status: HttpStatus.CONFLICT,
     description: 'Email already registered',
   })
+  @ApiResponse({
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    description:
+      'Too many requests from this IP address, please try again later',
+  })
+  @UseGuards(InterestedUsersThrottlerGuard)
   public async create(
     @Body() createInterestedUserDto: CreateInterestedUserDto,
   ): Promise<InterestedUserDto> {
@@ -73,6 +86,8 @@ export class InterestedUsersController {
     description: 'List of all interested users',
     type: [InterestedUserDto],
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async findAll(): Promise<InterestedUserDto[]> {
     const users = await this.interestedUsersService.findAll();
     return users.map((user) => plainToInstance(InterestedUserDto, user));
@@ -100,6 +115,8 @@ export class InterestedUsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'Interested user not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async findOne(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<InterestedUserDto> {
@@ -128,6 +145,8 @@ export class InterestedUsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'Interested user not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.interestedUsersService.remove(id);
   }

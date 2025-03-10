@@ -12,7 +12,9 @@ async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix(
-    process.env.NODE_ENV === 'production' ? 'outreach-service' : '',
+    ['production', 'development'].find((env) => env === process.env.NODE_ENV)
+      ? 'outreach-service'
+      : '',
   );
 
   // Enable validation pipe
@@ -31,7 +33,7 @@ async function bootstrap(): Promise<void> {
   const config = new DocumentBuilder()
     .setTitle('Outreach Service API')
     .setDescription('API documentation for the Outreach Service')
-    .setVersion('1.0.0')
+    .setVersion('1.0.8')
     .addBearerAuth()
     .build();
 
@@ -41,7 +43,9 @@ async function bootstrap(): Promise<void> {
   console.log(process.env.NODE_ENV);
 
   SwaggerModule.setup(
-    process.env.NODE_ENV === 'production' ? 'outreach-service/docs' : 'docs',
+    ['production', 'development'].find((env) => env === process.env.NODE_ENV)
+      ? 'outreach-service/docs'
+      : 'docs',
     app,
     documentFactory,
   );

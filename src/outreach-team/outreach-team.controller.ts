@@ -11,6 +11,7 @@ import {
   HttpStatus,
   HttpCode,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +27,10 @@ import {
   UpdateOutreachTeamDto,
 } from './outreach-team.dto';
 import { ContactsExceptionFilter } from '../contacts/contacts.exceptions';
+import { JwtAuthGuard } from '../auth/jwt.auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AccountRoles } from '../auth/role.enum';
 
 @ApiTags('Outreach Team')
 @Controller('outreach-team')
@@ -44,6 +49,8 @@ export class OutreachTeamController {
     status: HttpStatus.CONFLICT,
     description: 'Team member with this email already exists.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   create(
     @Body() createOutreachTeamDto: CreateOutreachTeamDto,
   ): Promise<OutreachTeam> {
@@ -59,6 +66,8 @@ export class OutreachTeamController {
     description: 'Returns an array of team members and total count',
     type: [OutreachTeam],
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   async findAll(
     @Query('skip', new ParseIntPipe({ optional: true })) skip?: number,
     @Query('take', new ParseIntPipe({ optional: true })) take?: number,
@@ -79,6 +88,8 @@ export class OutreachTeamController {
     status: HttpStatus.NOT_FOUND,
     description: 'Team member not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   findOne(@Param('id', ParseIntPipe) id: number): Promise<OutreachTeam> {
     return this.outreachTeamService.findOne(id);
   }
@@ -99,6 +110,8 @@ export class OutreachTeamController {
     status: HttpStatus.CONFLICT,
     description: 'Team member with this email already exists.',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOutreachTeamDto: UpdateOutreachTeamDto,
@@ -118,6 +131,8 @@ export class OutreachTeamController {
     status: HttpStatus.NOT_FOUND,
     description: 'Team member not found',
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.outreachTeamService.remove(id);
   }
