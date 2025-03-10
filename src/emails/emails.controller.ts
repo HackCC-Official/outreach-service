@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +17,10 @@ import {
 import { EmailsService } from './emails.service';
 import { SendEmailDto, SendBatchEmailsDto, UpdateEmailDto } from './emails.dto';
 import { Email } from './emails.entity';
+import { JwtAuthGuard } from '../auth/jwt.auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { AccountRoles } from '../auth/role.enum';
 
 @ApiTags('Emails')
 @Controller('emails')
@@ -27,6 +39,8 @@ export class EmailsController {
     type: Email,
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @Post('send')
   async sendEmail(@Body() sendEmailDto: SendEmailDto): Promise<Email> {
     return this.emailsService.sendEmail(sendEmailDto);
@@ -76,6 +90,8 @@ export class EmailsController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 500, description: 'Failed to send batch emails' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @Post('send-batch')
   async sendBatchEmails(
     @Body() sendBatchEmailsDto: SendBatchEmailsDto,
@@ -93,6 +109,8 @@ export class EmailsController {
     description: 'List of all emails',
     type: [Email],
   })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @Get()
   getAllEmails(): Email[] {
     return this.emailsService.getAllEmails();
@@ -115,6 +133,8 @@ export class EmailsController {
     type: Email,
   })
   @ApiResponse({ status: 404, description: 'Email not found' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @Get(':id')
   getEmailById(@Param('id') id: string): Email {
     return this.emailsService.getEmailById(id);
@@ -133,6 +153,8 @@ export class EmailsController {
   })
   @ApiResponse({ status: 404, description: 'Email not found' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @Put('update')
   updateEmail(@Body() updateEmailDto: UpdateEmailDto): Email {
     return this.emailsService.updateEmail(updateEmailDto);
