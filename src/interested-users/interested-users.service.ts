@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { InterestedUser } from './interested-user.entity';
 import {
@@ -10,6 +11,9 @@ import {
 } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase.config';
 import { CreateInterestedUserDto } from './dto/create-interested-user.dto';
+import { EmailsService } from '../emails/emails.service';
+import { SendEmailDto } from '../emails/emails.dto';
+import { renderThankYouEmail } from '../emails/render-emails';
 
 /**
  * Service handling interested users operations
@@ -17,6 +21,9 @@ import { CreateInterestedUserDto } from './dto/create-interested-user.dto';
 @Injectable()
 export class InterestedUsersService {
   private readonly TABLE_NAME = 'interested_users';
+  private readonly logger = new Logger(InterestedUsersService.name);
+
+  constructor(private readonly emailsService: EmailsService) {}
 
   /**
    * Extracts the data from a single Supabase response or throws an exception if there's an error.
@@ -76,10 +83,49 @@ export class InterestedUsersService {
       .select()
       .single();
 
-    return this.extractSingleResult(
+    const createdUser = this.extractSingleResult(
       createResult,
       'Failed to create interested user',
     );
+
+    // Send thank you email asynchronously (don't await)
+    this.sendThankYouEmail(normalizedEmail).catch((error: Error) => {
+      // Log error but don't block the response
+      this.logger.error(`Failed to send thank you email: ${error.message}`);
+    });
+
+    return createdUser;
+  }
+
+  /**
+   * Sends a thank you email to the user
+   * @param recipientEmail - The email address of the user
+   */
+  private async sendThankYouEmail(recipientEmail: string): Promise<void> {
+    try {
+      // Render the thank you email HTML
+      const emailHtml = await renderThankYouEmail({
+        recipientEmail,
+      });
+
+      // Create the email DTO
+      const emailDto: SendEmailDto = {
+        from: 'tiffanyn@hackcc.net',
+        to: [{ email: recipientEmail }],
+        subject: 'Thank you for your interest in HackCC!',
+        html: emailHtml,
+      };
+
+      // Send the email
+      await this.emailsService.sendEmail(emailDto);
+      this.logger.log(`Thank you email sent to ${recipientEmail}`);
+    } catch (error) {
+      // Just log the error but don't show to user as the interest registration was successful
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send thank you email: ${errorMessage}`);
+      throw error; // Rethrow to let the caller handle it
+    }
   }
 
   /**
