@@ -51,7 +51,7 @@ async function bootstrap(): Promise<void> {
         description: 'Enter your JWT token',
         in: 'header',
       },
-      'access-token', // This is the key used for @ApiBearerAuth() decorator
+      'access-token',
     )
     .build();
 
