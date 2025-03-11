@@ -16,6 +16,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { InterestedUsersService } from './interested-users.service';
 import { InterestedUserDto } from './dto/interested-user.dto';
@@ -86,6 +87,7 @@ export class InterestedUsersController {
     description: 'List of all interested users',
     type: [InterestedUserDto],
   })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async findAll(): Promise<InterestedUserDto[]> {
@@ -115,6 +117,7 @@ export class InterestedUsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'Interested user not found',
   })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async findOne(
