@@ -88,8 +88,8 @@ export class InterestedUsersController {
     type: [InterestedUserDto],
   })
   @ApiBearerAuth('access-token')
+  @Roles([AccountRoles.ORGANIZER])
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   public async findAll(): Promise<InterestedUserDto[]> {
     const users = await this.interestedUsersService.findAll();
     return users.map((user) => plainToInstance(InterestedUserDto, user));

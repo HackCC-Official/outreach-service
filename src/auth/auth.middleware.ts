@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { SupabaseStrategy } from './supabase.strategy';
 
 interface JwtHeader {
   alg: string;
@@ -7,9 +8,28 @@ interface JwtHeader {
   [key: string]: string;
 }
 
+interface JwtPayload {
+  [key: string]: unknown;
+}
+
+// Define the enhanced payload structure that matches what SupabaseStrategy.validate() returns
+interface EnhancedUserPayload {
+  user_id: string | null;
+  email: string | null;
+  user_roles: string[];
+  [key: string]: unknown;
+}
+
+// Extend Express Request interface to include user property
+interface RequestWithUser extends Request {
+  user: EnhancedUserPayload;
+}
+
 @Injectable()
 export class AuthLoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger(AuthLoggerMiddleware.name);
+
+  constructor(private readonly supabaseStrategy: SupabaseStrategy) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     this.logger.log('===== INCOMING REQUEST =====');
@@ -61,9 +81,57 @@ export class AuthLoggerMiddleware implements NestMiddleware {
                 this.logger.log(
                   `JWT Header: ${JSON.stringify(header, null, 2)}`,
                 );
+
+                // Decode the payload
+                try {
+                  const payloadText = Buffer.from(
+                    tokenParts[1],
+                    'base64',
+                  ).toString();
+                  const payload = JSON.parse(payloadText) as JwtPayload;
+                  this.logger.log(
+                    `JWT Payload (Decoded): ${JSON.stringify(payload, null, 2)}`,
+                  );
+
+                  // Call the validate method from SupabaseStrategy
+                  this.logger.log('Calling SupabaseStrategy.validate()');
+                  this.supabaseStrategy
+                    .validate(payload)
+                    .then((enhancedPayload: EnhancedUserPayload) => {
+                      this.logger.log(
+                        'SupabaseStrategy.validate() completed successfully',
+                      );
+                      // You can attach the enhancedPayload to the request object if needed
+                      (req as RequestWithUser).user = enhancedPayload;
+                    })
+                    .catch((error) => {
+                      this.logger.error(
+                        `Error in SupabaseStrategy.validate(): ${
+                          error instanceof Error
+                            ? error.message
+                            : 'Unknown error'
+                        }`,
+                      );
+                    })
+                    .finally(() => {
+                      // Always call next() to continue the request pipeline
+                      next();
+                    });
+
+                  // Return early since we're handling next() in the Promise chain
+                  return;
+                } catch (error) {
+                  this.logger.error(
+                    `Could not decode JWT payload: ${
+                      error instanceof Error ? error.message : 'Unknown error'
+                    }`,
+                  );
+                }
               } catch (error) {
                 this.logger.error(
-                  `Could not decode JWT header: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  `Could not decode JWT header: ${
+                    error instanceof Error ? error.message : 'Unknown error'
+                  }`,
                 );
               }
             } else {
@@ -73,7 +141,9 @@ export class AuthLoggerMiddleware implements NestMiddleware {
             }
           } catch (error) {
             this.logger.error(
-              `Error parsing authorization header: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              `Error parsing authorization header: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`,
             );
           }
         } else {
@@ -93,6 +163,7 @@ export class AuthLoggerMiddleware implements NestMiddleware {
     this.logger.log(`Time: ${new Date().toISOString()}`);
     this.logger.log('===========================');
 
+    // Don't call next() if we returned early after calling validate()
     next();
   }
 }

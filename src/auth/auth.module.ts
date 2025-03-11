@@ -5,8 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.auth.guard';
 import { SupabaseStrategy } from './supabase.strategy';
 import { SupabaseService } from './supabase.service';
-import { AuthService } from './auth.service';
-import { AuthDebugController } from './auth.controller';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
@@ -30,20 +29,18 @@ import { AuthDebugController } from './auth.controller';
       inject: [ConfigService], // Inject ConfigService
     }),
   ],
-  controllers: [
-    AuthDebugController, // Controller for debugging JWT tokens
-  ],
   providers: [
     JwtAuthGuard, // Custom JWT guard
     SupabaseStrategy, // Custom Supabase Passport strategy
     SupabaseService, // Service for Supabase interactions
-    AuthService, // Service for JWT token debugging
+    RolesGuard, // Custom roles guard for RBAC
   ],
   exports: [
     JwtAuthGuard, // Export JwtAuthGuard for use in other modules
     JwtModule, // Export JwtModule for use in other modules
     SupabaseService, // Export SupabaseService for use in other modules
-    AuthService, // Export AuthService for use in other modules
+    SupabaseStrategy, // Export SupabaseStrategy so it can be injected into middleware
+    RolesGuard, // Export RolesGuard for use in other modules
   ],
 })
 export class AuthModule {}

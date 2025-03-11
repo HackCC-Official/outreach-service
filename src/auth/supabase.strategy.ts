@@ -10,7 +10,7 @@ import { SupabaseService } from './supabase.service';
 interface AccountRow {
   id: string;
   email: string;
-  roles: string; // JSON string like "[\"ADMIN\"]"
+  roles: string[]; // PostgreSQL text[] array type
   createdAt: string;
   deletedAt: string | null;
   teamId: string | null;
@@ -63,15 +63,14 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
     let userRoles: string[] = [];
 
     try {
-      if (email) {
+      if (userId) {
         // Get the Supabase client
         const supabase = this.supabaseService.getClient();
 
-        // Query the account table by email
         const { data, error } = await supabase
           .from('account')
           .select('*')
-          .eq('email', email)
+          .eq('user_id', userId)
           .single();
 
         if (error) {
@@ -80,42 +79,30 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
           const account = data as AccountRow;
           this.logger.log('Found account:', JSON.stringify(account, null, 2));
 
-          // Parse the roles JSON string
-          try {
-            userRoles = JSON.parse(account.roles);
+          // Use the roles array directly - no parsing needed
+          if (Array.isArray(account.roles)) {
+            userRoles = account.roles;
             this.logger.log(
-              'Parsed roles from account:',
+              'Roles from account:',
               JSON.stringify(userRoles, null, 2),
             );
-          } catch (err) {
-            this.logger.error(
-              'Error parsing roles JSON:',
-              err instanceof Error ? err.message : 'Unknown error',
+          } else {
+            this.logger.warn(
+              'Account roles is not an array:',
+              typeof account.roles,
             );
           }
         } else {
-          this.logger.warn('No account found for email:', email);
+          this.logger.warn('No account found for userId:', userId);
         }
       } else {
-        this.logger.warn('No email in token to look up account');
+        this.logger.warn('No userId in token to look up account');
       }
     } catch (error) {
       this.logger.error(
         'Error during account lookup:',
         error instanceof Error ? error.message : 'Unknown error',
       );
-    }
-
-    // If no roles found, use default roles for testing in development
-    if (!userRoles || !Array.isArray(userRoles) || userRoles.length === 0) {
-      if (this.configService.get('NODE_ENV') === 'development') {
-        this.logger.warn(
-          'No roles found, using default roles for development testing',
-        );
-        userRoles = ['ADMIN', 'ORGANIZER'];
-      } else {
-        this.logger.warn('No roles found, user will have no permissions');
-      }
     }
 
     this.logger.log('Final User Roles:', JSON.stringify(userRoles, null, 2));
