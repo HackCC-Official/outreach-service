@@ -16,8 +16,11 @@ export class SupabaseService {
 
   constructor(private configService: ConfigService) {
     // Determine current environment
+    const nodeEnv = this.configService.get<string>('NODE_ENV');
+    this.logger.debug(`Current NODE_ENV value: "${nodeEnv}"`);
+
     this.currentEnvironment =
-      this.configService.get<string>('NODE_ENV') === 'production'
+      nodeEnv === 'production'
         ? SupabaseEnvironment.PRODUCTION
         : SupabaseEnvironment.DEVELOPMENT;
 
@@ -39,6 +42,9 @@ export class SupabaseService {
       'SERVICE_ROLE',
     );
 
+    this.logger.debug(`Using DEV Supabase URL: ${devSupabaseUrl}`);
+    this.logger.debug(`Using PROD Supabase URL: ${prodSupabaseUrl}`);
+
     // Initialize production client
     this.prodSupabase = createClient(prodSupabaseUrl, prodServiceRole);
 
@@ -59,11 +65,19 @@ export class SupabaseService {
    */
   private getConfigValue(primaryKey: string, fallbackKey: string): string {
     const primaryValue = this.configService.get<string>(primaryKey);
+    this.logger.debug(
+      `Config key ${primaryKey}: ${primaryValue ? 'Found' : 'Not found'}`,
+    );
+
     if (primaryValue) {
       return primaryValue;
     }
 
     const fallbackValue = this.configService.get<string>(fallbackKey);
+    this.logger.debug(
+      `Fallback config key ${fallbackKey}: ${fallbackValue ? 'Found' : 'Not found'}`,
+    );
+
     if (fallbackValue) {
       return fallbackValue;
     }
@@ -77,9 +91,15 @@ export class SupabaseService {
    * Returns the Supabase client for the current environment
    */
   getClient(): SupabaseClient {
-    return this.currentEnvironment === SupabaseEnvironment.PRODUCTION
-      ? this.prodSupabase
-      : this.devSupabase;
+    const client =
+      this.currentEnvironment === SupabaseEnvironment.PRODUCTION
+        ? this.prodSupabase
+        : this.devSupabase;
+
+    this.logger.debug(
+      `getClient() returning client for environment: ${this.currentEnvironment}`,
+    );
+    return client;
   }
 
   /**
@@ -87,6 +107,7 @@ export class SupabaseService {
    * @param environment - The environment to get the client for
    */
   getClientForEnvironment(environment: SupabaseEnvironment): SupabaseClient {
+    this.logger.debug(`getClientForEnvironment(${environment}) called`);
     return environment === SupabaseEnvironment.PRODUCTION
       ? this.prodSupabase
       : this.devSupabase;

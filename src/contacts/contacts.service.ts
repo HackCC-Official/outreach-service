@@ -1,20 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Contact } from './contacts.entity';
 import { CreateContactDto, UpdateContactDto } from './contacts.dto';
 import {
   DuplicateContactException,
   InvalidContactDataException,
 } from './contacts.exceptions';
-import { supabase } from '../config/supabase.config';
+import { SupabaseService } from '../auth/supabase.service';
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
+  SupabaseClient,
 } from '@supabase/supabase-js';
 import { parse } from 'csv-parse/sync';
 
 @Injectable()
 export class ContactsService {
   private readonly TABLE_NAME = 'outreach_contacts';
+  private readonly logger = new Logger(ContactsService.name);
+
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   /**
    * Normalizes an email address by trimming whitespace and converting to lower case.
@@ -35,6 +39,7 @@ export class ContactsService {
     email: string,
     excludeId?: number,
   ): Promise<void> {
+    const supabase = this.supabaseService.getClient();
     const query = supabase
       .from(this.TABLE_NAME)
       .select('id')
@@ -73,6 +78,11 @@ export class ContactsService {
    * @returns The created contact
    */
   async create(createContactDto: CreateContactDto): Promise<Contact> {
+    const supabase = this.supabaseService.getClient();
+    this.logger.debug(
+      `Creating contact using environment: ${this.supabaseService.getCurrentEnvironment()}`,
+    );
+
     // Check for duplicate email using helper method
     await this.checkDuplicateEmail(createContactDto.email);
 
@@ -99,6 +109,8 @@ export class ContactsService {
    * @returns Array of contacts and total count
    */
   async findAll(skip = 0, take = 10): Promise<[Contact[], number]> {
+    const supabase = this.supabaseService.getClient();
+
     const { data, error, count }: PostgrestResponse<Contact> = await supabase
       .from(this.TABLE_NAME)
       .select('*', { count: 'exact' })
@@ -118,6 +130,8 @@ export class ContactsService {
    * @returns The found contact or throws ContactNotFoundException
    */
   async findOne(id: number): Promise<Contact> {
+    const supabase = this.supabaseService.getClient();
+
     const findResult: PostgrestSingleResponse<Contact> = await supabase
       .from(this.TABLE_NAME)
       .select('*')
@@ -140,6 +154,8 @@ export class ContactsService {
     id: number,
     updateContactDto: UpdateContactDto,
   ): Promise<Contact> {
+    const supabase = this.supabaseService.getClient();
+
     // If email is being updated, check for duplicates using helper method
     if (updateContactDto.email !== undefined) {
       await this.checkDuplicateEmail(updateContactDto.email, id);
@@ -169,6 +185,8 @@ export class ContactsService {
    * @returns void
    */
   async remove(id: number): Promise<void> {
+    const supabase = this.supabaseService.getClient();
+
     // Check if contact exists
     await this.findOne(id);
 
@@ -185,6 +203,8 @@ export class ContactsService {
    * @returns Array of matching contacts
    */
   async search(query: string): Promise<Contact[]> {
+    const supabase = this.supabaseService.getClient();
+
     if (!query || query.trim().length === 0) {
       throw new InvalidContactDataException(['Search query cannot be empty']);
     }
@@ -219,6 +239,8 @@ export class ContactsService {
   async uploadContacts(
     fileBuffer: Buffer,
   ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
+    const supabase = this.supabaseService.getClient();
+
     interface ParsedContactRow {
       'Email address': string;
       'Domain name': string;
