@@ -131,7 +131,7 @@ export class InterestedUsersController {
    * Deletes an interested user by ID
    * @param id - The UUID of the interested user to delete
    */
-  @Delete(':id')
+  @Delete(':email')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an interested user' })
   @ApiParam({
@@ -149,9 +149,7 @@ export class InterestedUsersController {
     description: 'Interested user not found',
   })
   @UseGuards(InterestedUsersThrottlerGuard)
-  public async remove(
-    @Param('email', ParseUUIDPipe) email: string,
-  ): Promise<void> {
+  public async remove(@Body('email') email: string): Promise<void> {
     await this.interestedUsersService.remove(email);
   }
 }
