@@ -12,7 +12,6 @@ import {
 } from '@react-email/components';
 
 // Base URL for static assets
-const baseUrl = 'https://hackcc.com';
 
 /**
  * Props for the thank you email template
@@ -79,6 +78,14 @@ const footer = {
 };
 
 /**
+ * Style for the unsubscribe link
+ */
+const unsubscribeLink = {
+  color: '#666',
+  textDecoration: 'underline',
+};
+
+/**
  * Thank You Email template sent to users who register their interest in HackCC
  */
 export const ThankYouEmail = ({
@@ -94,7 +101,7 @@ export const ThankYouEmail = ({
           {/* Header */}
           <Section style={header}>
             <Img
-              src={`${baseUrl}/static/hackcc-logo.png`}
+              src={`https://minio.hackcc.net/public-bucket/logo.svg`}
               width={120}
               height={45}
               alt="HackCC Logo"
@@ -146,6 +153,14 @@ export const ThankYouEmail = ({
             <Text>
               You received this email because you signed up for updates about
               HackCC events with the email address: {recipientEmail}
+            </Text>
+            <Text>
+              <a
+                href={`https://hackcc.net/mailing/unsubscribe?email=${encodeURIComponent(recipientEmail)}`}
+                style={unsubscribeLink}
+              >
+                Unsubscribe from emails
+              </a>
             </Text>
           </Section>
         </Container>

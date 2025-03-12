@@ -165,18 +165,18 @@ export class InterestedUsersService {
   }
 
   /**
-   * Deletes an interested user by ID
-   * @param id - The UUID of the interested user to delete
+   * Deletes an interested user by email
+   * @param email - The email of the interested user to delete
    * @throws NotFoundException if the user doesn't exist
    */
-  public async remove(id: string): Promise<void> {
+  public async remove(email: string): Promise<void> {
     // Check if user exists first
-    await this.findOne(id);
+    await this.findOne(email);
 
     const { error } = await supabase
       .from(this.TABLE_NAME)
       .delete()
-      .eq('id', id);
+      .eq('email', email);
 
     if (error) {
       throw new NotFoundException('Failed to delete interested user');

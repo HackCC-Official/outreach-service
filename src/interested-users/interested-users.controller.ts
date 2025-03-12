@@ -135,10 +135,10 @@ export class InterestedUsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an interested user' })
   @ApiParam({
-    name: 'id',
-    description: 'The UUID of the interested user to delete',
+    name: 'email',
+    description: 'The email of the interested user to delete',
     type: 'string',
-    format: 'uuid',
+    format: 'email@example.com',
   })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -148,9 +148,10 @@ export class InterestedUsersController {
     status: HttpStatus.NOT_FOUND,
     description: 'Interested user not found',
   })
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
-  public async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    await this.interestedUsersService.remove(id);
+  @UseGuards(InterestedUsersThrottlerGuard)
+  public async remove(
+    @Param('email', ParseUUIDPipe) email: string,
+  ): Promise<void> {
+    await this.interestedUsersService.remove(email);
   }
 }
