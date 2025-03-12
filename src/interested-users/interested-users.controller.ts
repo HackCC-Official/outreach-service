@@ -128,8 +128,8 @@ export class InterestedUsersController {
   }
 
   /**
-   * Deletes an interested user by ID
-   * @param id - The UUID of the interested user to delete
+   * Deletes an interested user by email
+   * @param email - The email of the interested user to delete
    */
   @Delete(':email')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -149,7 +149,7 @@ export class InterestedUsersController {
     description: 'Interested user not found',
   })
   @UseGuards(InterestedUsersThrottlerGuard)
-  public async remove(@Body('email') email: string): Promise<void> {
+  public async remove(@Param('email') email: string): Promise<void> {
     await this.interestedUsersService.remove(email);
   }
 }
