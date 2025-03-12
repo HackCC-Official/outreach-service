@@ -45,6 +45,14 @@ export class CreateOutreachTeamDto {
   @IsString()
   @IsNotEmpty({ message: 'School is required' })
   school: string;
+
+  @ApiProperty({
+    description: 'The position/role of the team member',
+    example: 'Outreach',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Position is required' })
+  position: string;
 }
 
 export class UpdateOutreachTeamDto extends PartialType(CreateOutreachTeamDto) {}

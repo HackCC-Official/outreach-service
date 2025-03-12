@@ -36,4 +36,10 @@ export class OutreachTeam {
     example: 'University of California, Berkeley',
   })
   school: string;
+
+  @ApiProperty({
+    description: 'The position/role of the team member',
+    example: 'Outreach',
+  })
+  position: string;
 }
