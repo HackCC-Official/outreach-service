@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { OutreachTeam } from './outreach-team.entity';
 import {
   CreateOutreachTeamDto,
@@ -8,7 +8,7 @@ import {
   DuplicateContactException,
   InvalidContactDataException,
 } from '../contacts/contacts.exceptions';
-import { SupabaseService } from '../auth/supabase.service';
+import { supabase } from '../config/supabase.config';
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
@@ -17,9 +17,6 @@ import {
 @Injectable()
 export class OutreachTeamService {
   private readonly TABLE_NAME = 'outreach_hackcc';
-  private readonly logger = new Logger(OutreachTeamService.name);
-
-  constructor(private readonly supabaseService: SupabaseService) {}
 
   /**
    * Normalizes an email address by trimming whitespace and converting to lower case.
@@ -40,7 +37,6 @@ export class OutreachTeamService {
     email: string,
     excludeId?: number,
   ): Promise<void> {
-    const supabase = this.supabaseService.getClient();
     const query = supabase
       .from(this.TABLE_NAME)
       .select('id')
@@ -63,11 +59,6 @@ export class OutreachTeamService {
   async create(
     createOutreachTeamDto: CreateOutreachTeamDto,
   ): Promise<OutreachTeam> {
-    const supabase = this.supabaseService.getClient();
-    this.logger.debug(
-      `Creating team member using environment: ${this.supabaseService.getCurrentEnvironment()}`,
-    );
-
     // Check for duplicate email
     await this.checkDuplicateEmail(createOutreachTeamDto.email);
 
@@ -97,8 +88,6 @@ export class OutreachTeamService {
    * @returns Array of team members and total count
    */
   async findAll(skip = 0, take = 10): Promise<[OutreachTeam[], number]> {
-    const supabase = this.supabaseService.getClient();
-
     const { data, error, count }: PostgrestResponse<OutreachTeam> =
       await supabase
         .from(this.TABLE_NAME)
@@ -118,8 +107,6 @@ export class OutreachTeamService {
    * @returns The found team member
    */
   async findOne(id: number): Promise<OutreachTeam> {
-    const supabase = this.supabaseService.getClient();
-
     const { data, error }: PostgrestSingleResponse<OutreachTeam> =
       await supabase.from(this.TABLE_NAME).select('*').eq('id', id).single();
 
@@ -142,8 +129,6 @@ export class OutreachTeamService {
     id: number,
     updateOutreachTeamDto: UpdateOutreachTeamDto,
   ): Promise<OutreachTeam> {
-    const supabase = this.supabaseService.getClient();
-
     // If email is being updated, check for duplicates
     if (updateOutreachTeamDto.email !== undefined) {
       await this.checkDuplicateEmail(updateOutreachTeamDto.email, id);
@@ -180,8 +165,6 @@ export class OutreachTeamService {
    * @returns void
    */
   async remove(id: number): Promise<void> {
-    const supabase = this.supabaseService.getClient();
-
     // Check if team member exists
     await this.findOne(id);
 

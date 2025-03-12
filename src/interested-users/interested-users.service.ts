@@ -9,7 +9,7 @@ import {
   PostgrestResponse,
   PostgrestSingleResponse,
 } from '@supabase/supabase-js';
-import { SupabaseService } from '../auth/supabase.service';
+import { supabase } from '../config/supabase.config';
 import { CreateInterestedUserDto } from './dto/create-interested-user.dto';
 import { EmailsService } from '../emails/emails.service';
 import { SendEmailDto } from '../emails/emails.dto';
@@ -23,10 +23,7 @@ export class InterestedUsersService {
   private readonly TABLE_NAME = 'interested_users';
   private readonly logger = new Logger(InterestedUsersService.name);
 
-  constructor(
-    private readonly emailsService: EmailsService,
-    private readonly supabaseService: SupabaseService,
-  ) {}
+  constructor(private readonly emailsService: EmailsService) {}
 
   /**
    * Extracts the data from a single Supabase response or throws an exception if there's an error.
@@ -63,10 +60,6 @@ export class InterestedUsersService {
     createInterestedUserDto: CreateInterestedUserDto,
   ): Promise<InterestedUser> {
     const normalizedEmail = this.normalizeEmail(createInterestedUserDto.email);
-    const supabase = this.supabaseService.getClient();
-    this.logger.debug(
-      `Using Supabase client for environment: ${this.supabaseService.getCurrentEnvironment()}`,
-    );
 
     // Check for existing email
     const { data: existingUser } = await supabase
@@ -140,8 +133,6 @@ export class InterestedUsersService {
    * @returns Array of interested users
    */
   public async findAll(): Promise<InterestedUser[]> {
-    const supabase = this.supabaseService.getClient();
-
     const { data, error }: PostgrestResponse<InterestedUser> = await supabase
       .from(this.TABLE_NAME)
       .select('*')
@@ -161,8 +152,6 @@ export class InterestedUsersService {
    * @throws NotFoundException if the user doesn't exist
    */
   public async findOne(id: string): Promise<InterestedUser> {
-    const supabase = this.supabaseService.getClient();
-
     const findResult: PostgrestSingleResponse<InterestedUser> = await supabase
       .from(this.TABLE_NAME)
       .select('*')
@@ -182,10 +171,6 @@ export class InterestedUsersService {
    */
   public async remove(email: string): Promise<void> {
     const normalizedEmail = this.normalizeEmail(email);
-    const supabase = this.supabaseService.getClient();
-    this.logger.debug(
-      `Removing user with email ${normalizedEmail} using environment: ${this.supabaseService.getCurrentEnvironment()}`,
-    );
 
     const { error } = await supabase
       .from(this.TABLE_NAME)
