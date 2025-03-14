@@ -3,11 +3,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe, Logger } from '@nestjs/common';
 
-// Load environment variables from .env file
-
-/**
- * Bootstrap the NestJS application with Swagger documentation
- */
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
@@ -18,26 +13,23 @@ async function bootstrap(): Promise<void> {
       : '',
   );
 
-  // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strip properties that don't have decorators
-      transform: true, // Transform payloads to DTO instances
-      forbidNonWhitelisted: true, // Throw errors when non-whitelisted values are provided
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
       transformOptions: {
-        enableImplicitConversion: true, // Automatically transform query parameters
+        enableImplicitConversion: true,
       },
     }),
   );
 
-  // Enable CORS for Swagger UI
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // Configure Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Outreach Service API')
     .setDescription('API documentation for the Outreach Service')
@@ -60,7 +52,6 @@ async function bootstrap(): Promise<void> {
 
   logger.log(`Environment: ${process.env.NODE_ENV}`);
 
-  // Set up Swagger UI
   const docsPath = ['production', 'development'].find(
     (env) => env === process.env.NODE_ENV,
   )

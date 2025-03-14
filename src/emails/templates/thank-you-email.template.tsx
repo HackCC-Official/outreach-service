@@ -11,26 +11,11 @@ import {
   Text,
 } from '@react-email/components';
 
-// Base URL for static assets
-
-/**
- * Props for the thank you email template
- */
 interface ThankYouEmailProps {
-  /**
-   * The email address of the recipient
-   */
   recipientEmail: string;
-
-  /**
-   * Optional custom message to include in the email
-   */
   customMessage?: string;
 }
 
-/**
- * Email styles
- */
 const main = {
   backgroundColor: '#ffffff',
   fontFamily:
@@ -77,17 +62,11 @@ const footer = {
   color: '#666',
 };
 
-/**
- * Style for the unsubscribe link
- */
 const unsubscribeLink = {
   color: '#666',
   textDecoration: 'underline',
 };
 
-/**
- * Thank You Email template sent to users who register their interest in HackCC
- */
 export const ThankYouEmail = ({
   recipientEmail,
   customMessage,

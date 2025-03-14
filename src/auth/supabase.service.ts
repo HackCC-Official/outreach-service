@@ -15,7 +15,6 @@ export class SupabaseService {
   private readonly logger = new Logger(SupabaseService.name);
 
   constructor(private configService: ConfigService) {
-    // Determine current environment
     const nodeEnv = this.configService.get<string>('NODE_ENV');
     this.logger.debug(`Current NODE_ENV value: "${nodeEnv}"`);
 
@@ -24,7 +23,6 @@ export class SupabaseService {
         ? SupabaseEnvironment.PRODUCTION
         : SupabaseEnvironment.DEVELOPMENT;
 
-    // Get configuration values with fallbacks
     const prodSupabaseUrl = this.getConfigValue(
       'PROD_SUPABASE_URL',
       'SUPABASE_URL',
@@ -56,13 +54,6 @@ export class SupabaseService {
     );
   }
 
-  /**
-   * Gets a configuration value with a fallback
-   * @param primaryKey - The primary configuration key to check
-   * @param fallbackKey - The fallback configuration key if primary is not found
-   * @returns The configuration value as a string
-   * @throws Error if neither the primary nor fallback configuration values exist
-   */
   private getConfigValue(primaryKey: string, fallbackKey: string): string {
     const primaryValue = this.configService.get<string>(primaryKey);
     this.logger.debug(
@@ -87,9 +78,6 @@ export class SupabaseService {
     );
   }
 
-  /**
-   * Returns the Supabase client for the current environment
-   */
   getClient(): SupabaseClient {
     const client =
       this.currentEnvironment === SupabaseEnvironment.PRODUCTION
@@ -102,10 +90,6 @@ export class SupabaseService {
     return client;
   }
 
-  /**
-   * Returns the Supabase client for the specified environment
-   * @param environment - The environment to get the client for
-   */
   getClientForEnvironment(environment: SupabaseEnvironment): SupabaseClient {
     this.logger.debug(`getClientForEnvironment(${environment}) called`);
     return environment === SupabaseEnvironment.PRODUCTION
@@ -113,9 +97,6 @@ export class SupabaseService {
       : this.devSupabase;
   }
 
-  /**
-   * Returns the current Supabase environment
-   */
   getCurrentEnvironment(): SupabaseEnvironment {
     return this.currentEnvironment;
   }

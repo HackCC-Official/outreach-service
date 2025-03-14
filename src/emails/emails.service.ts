@@ -76,7 +76,6 @@ export class EmailsService {
     sendBatchEmailsDto: SendBatchEmailsDto,
   ): Promise<Email[]> {
     try {
-      // Convert the DTO to the format expected by Resend batch API
       const batchPayload = sendBatchEmailsDto.emails.map((emailDto) => ({
         from: emailDto.from,
         to: emailDto.to.map((recipient) => recipient.email),
@@ -85,7 +84,6 @@ export class EmailsService {
         ...(emailDto.attachments && { attachments: emailDto.attachments }),
       }));
 
-      // Send batch emails using the expected format
       const response = await this.resend.batch.send(batchPayload);
 
       if (!response || response.error) {
@@ -94,10 +92,9 @@ export class EmailsService {
         );
       }
 
-      // Create Email objects for the sent emails
       const sentEmails: Email[] = sendBatchEmailsDto.emails.map(
         (emailDto, index) => ({
-          id: `batch-${index}-${Date.now()}`, // Generate a temporary ID since Resend batch doesn't return IDs
+          id: `batch-${index}-${Date.now()}`,
           from: emailDto.from,
           to: emailDto.to.map((r) => r.email),
           subject: emailDto.subject,
@@ -108,7 +105,6 @@ export class EmailsService {
         }),
       );
 
-      // Store all sent emails
       sentEmails.forEach((email) => {
         this.emailStore.set(email.id, email);
       });

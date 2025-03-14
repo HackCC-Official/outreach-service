@@ -1,6 +1,3 @@
-/*
- * DTO for uploading a CSV file.
- */
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UploadFileDto {

@@ -5,9 +5,6 @@ import { InterestedUsersThrottlerGuard } from './throttler.guard';
 import { EmailsModule } from '../emails/emails.module';
 import { AuthModule } from '../auth/auth.module';
 
-/**
- * Module for handling interested users functionality
- */
 @Module({
   imports: [EmailsModule, AuthModule],
   controllers: [InterestedUsersController],

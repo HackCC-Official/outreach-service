@@ -28,9 +28,6 @@ import { Roles } from '../auth/roles.decorator';
 import { AccountRoles } from '../auth/role.enum';
 import { InterestedUsersThrottlerGuard } from './throttler.guard';
 
-/**
- * Controller handling interested users endpoints
- */
 @ApiTags('Interested Users')
 @Controller('interested-users')
 export class InterestedUsersController {

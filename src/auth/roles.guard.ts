@@ -10,9 +10,6 @@ import { Roles } from './roles.decorator';
 import { AccountRoles } from './role.enum';
 import { Request } from 'express';
 
-/**
- * Interface for authenticated request with user data
- */
 interface AuthenticatedRequest extends Request {
   user: {
     user_id: string;
@@ -22,10 +19,6 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-/**
- * Guard that checks if the user has the required roles to access a route
- * Uses the @Roles decorator to determine required roles and checks against user's roles
- */
 @Injectable()
 export class RolesGuard implements CanActivate {
   private readonly logger = new Logger(RolesGuard.name);
@@ -33,7 +26,6 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Get required roles from the route handler
     const requiredRoles = this.reflector.get(Roles, context.getHandler());
     const handlerName = context.getHandler().name;
     const className = context.getClass().name;
@@ -41,7 +33,6 @@ export class RolesGuard implements CanActivate {
     this.logger.log(`===== RolesGuard Check =====`);
     this.logger.log(`Route: ${className}.${handlerName}`);
 
-    // If no roles are required, allow access
     if (!requiredRoles || !requiredRoles.length) {
       this.logger.log(`No roles required for this route - Access GRANTED`);
       return true;
@@ -49,13 +40,10 @@ export class RolesGuard implements CanActivate {
 
     this.logger.log(`Required roles: ${requiredRoles.join(', ')}`);
 
-    // Get the request object
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    // Extract user from request
     const user = request.user;
 
-    // If no user or user roles, deny access
     if (!user || !user.user_roles || !Array.isArray(user.user_roles)) {
       this.logger.error(
         `No user or user_roles found in request - Access DENIED`,
@@ -69,13 +57,11 @@ export class RolesGuard implements CanActivate {
     this.logger.log(`User ID: ${user.user_id}`);
     this.logger.log(`User roles: ${user.user_roles.join(', ')}`);
 
-    // Check if user has admin role (which grants access to everything)
     if (user.user_roles.includes(AccountRoles.ADMIN)) {
       this.logger.log(`User has ADMIN role - Access GRANTED`);
       return true;
     }
 
-    // Check if user has any of the required roles
     const hasRequiredRole = requiredRoles.some((role) =>
       user.user_roles.includes(role),
     );

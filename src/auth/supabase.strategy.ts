@@ -79,7 +79,6 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
           const account = data as AccountRow;
           this.logger.log('Found account:', JSON.stringify(account, null, 2));
 
-          // Use the roles array directly - no parsing needed
           if (Array.isArray(account.roles)) {
             userRoles = account.roles;
             this.logger.log(
@@ -107,7 +106,6 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
 
     this.logger.log('Final User Roles:', JSON.stringify(userRoles, null, 2));
 
-    // Enhance the payload with user_roles for the RolesGuard
     const enhancedPayload = {
       ...payload,
       user_id: userId,

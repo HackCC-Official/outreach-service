@@ -15,9 +15,6 @@ import { EmailsService } from '../emails/emails.service';
 import { SendEmailDto } from '../emails/emails.dto';
 import { renderThankYouEmail } from '../emails/render-emails';
 
-/**
- * Service handling interested users operations
- */
 @Injectable()
 export class InterestedUsersService {
   private readonly TABLE_NAME = 'interested_users';
@@ -68,7 +65,6 @@ export class InterestedUsersService {
       `Using Supabase client for environment: ${this.supabaseService.getCurrentEnvironment()}`,
     );
 
-    // Check for existing email
     const { data: existingUser } = await supabase
       .from(this.TABLE_NAME)
       .select('id')
@@ -110,12 +106,10 @@ export class InterestedUsersService {
    */
   private async sendThankYouEmail(recipientEmail: string): Promise<void> {
     try {
-      // Render the thank you email HTML
       const emailHtml = await renderThankYouEmail({
         recipientEmail,
       });
 
-      // Create the email DTO
       const emailDto: SendEmailDto = {
         from: 'support@hackcc.net',
         to: [{ email: recipientEmail }],
@@ -123,15 +117,13 @@ export class InterestedUsersService {
         html: emailHtml,
       };
 
-      // Send the email
       await this.emailsService.sendEmail(emailDto);
       this.logger.log(`Thank you email sent to ${recipientEmail}`);
     } catch (error) {
-      // Just log the error but don't show to user as the interest registration was successful
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to send thank you email: ${errorMessage}`);
-      throw error; // Rethrow to let the caller handle it
+      throw error;
     }
   }
 

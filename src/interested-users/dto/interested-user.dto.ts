@@ -1,9 +1,6 @@
 import { IsEmail, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-/**
- * DTO for interested user responses
- */
 export class InterestedUserDto {
   @ApiProperty({
     description: 'Unique identifier of the interested user',

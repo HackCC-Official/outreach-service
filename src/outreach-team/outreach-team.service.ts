@@ -144,12 +144,10 @@ export class OutreachTeamService {
   ): Promise<OutreachTeam> {
     const supabase = this.supabaseService.getClient();
 
-    // If email is being updated, check for duplicates
     if (updateOutreachTeamDto.email !== undefined) {
       await this.checkDuplicateEmail(updateOutreachTeamDto.email, id);
     }
 
-    // Build update data object, normalizing email if provided
     const updateData: Partial<OutreachTeam> = {
       ...updateOutreachTeamDto,
     };

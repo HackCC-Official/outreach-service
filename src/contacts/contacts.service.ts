@@ -9,7 +9,6 @@ import { SupabaseService } from '../auth/supabase.service';
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
-  SupabaseClient,
 } from '@supabase/supabase-js';
 import { parse } from 'csv-parse/sync';
 
@@ -83,7 +82,6 @@ export class ContactsService {
       `Creating contact using environment: ${this.supabaseService.getCurrentEnvironment()}`,
     );
 
-    // Check for duplicate email using helper method
     await this.checkDuplicateEmail(createContactDto.email);
 
     const createResult: PostgrestSingleResponse<Contact> = await supabase
@@ -156,12 +154,10 @@ export class ContactsService {
   ): Promise<Contact> {
     const supabase = this.supabaseService.getClient();
 
-    // If email is being updated, check for duplicates using helper method
     if (updateContactDto.email !== undefined) {
       await this.checkDuplicateEmail(updateContactDto.email, id);
     }
 
-    // Build update data object, normalizing email if provided.
     const updateData: Partial<Contact> = {
       ...updateContactDto,
     };
@@ -239,8 +235,6 @@ export class ContactsService {
   async uploadContacts(
     fileBuffer: Buffer,
   ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
-    const supabase = this.supabaseService.getClient();
-
     interface ParsedContactRow {
       'Email address': string;
       'Domain name': string;
