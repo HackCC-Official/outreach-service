@@ -19,7 +19,13 @@ export class EmailsService {
   private readonly emailStore: Map<string, Email> = new Map();
 
   constructor(private readonly configService: ConfigService) {
-    this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
+    this.resend = new Resend(
+      this.configService.get<string>(
+        process.env.NODE_ENV === 'production'
+          ? 'PROD_RESEND_API_KEY'
+          : 'DEV_RESEND_API_KEY',
+      ),
+    );
   }
 
   /**
