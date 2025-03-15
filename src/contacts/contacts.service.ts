@@ -9,6 +9,7 @@ import { SupabaseService } from '../auth/supabase.service';
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
+  PostgrestError,
 } from '@supabase/supabase-js';
 import { parse } from 'csv-parse/sync';
 
@@ -64,9 +65,8 @@ export class ContactsService {
     fallbackMessage: string,
   ): T {
     if (result.error || !result.data) {
-      throw new InvalidContactDataException([
-        result.error?.message || fallbackMessage,
-      ]);
+      const errorMessage: string = result.error?.message || fallbackMessage;
+      throw new InvalidContactDataException([errorMessage]);
     }
     return result.data;
   }
@@ -84,16 +84,23 @@ export class ContactsService {
 
     await this.checkDuplicateEmail(createContactDto.email);
 
+    const contactData = {
+      ...createContactDto,
+      email: this.normalizeEmail(createContactDto.email),
+      created_at: new Date().toISOString(),
+      been_contacted: false,
+      organization:
+        createContactDto.organization || createContactDto.company || 'Unknown',
+      first_name: createContactDto.first_name || 'John',
+      last_name: createContactDto.last_name || 'Doe',
+      position: createContactDto.position || 'Unknown',
+    };
+
+    delete contactData.company;
+
     const createResult: PostgrestSingleResponse<Contact> = await supabase
       .from(this.TABLE_NAME)
-      .insert([
-        {
-          ...createContactDto,
-          email: this.normalizeEmail(createContactDto.email),
-          created_at: new Date().toISOString(),
-          been_contacted: false,
-        },
-      ])
+      .insert([contactData])
       .select()
       .single();
 
@@ -238,7 +245,8 @@ export class ContactsService {
     interface ParsedContactRow {
       'Email address': string;
       'Domain name': string;
-      Organization: string;
+      Organization?: string;
+      Company?: string;
       Country: string;
       State: string;
       City: string;
@@ -248,10 +256,10 @@ export class ContactsService {
       Type: string;
       'Number of sources': string;
       Pattern: string;
-      'First name': string;
-      'Last name': string;
+      'First name'?: string;
+      'Last name'?: string;
       Department: string;
-      Position: string;
+      Position?: string;
       'Twitter handle': string;
       'LinkedIn URL': string;
       'Phone number': string;
@@ -268,10 +276,12 @@ export class ContactsService {
         relaxColumnCount: true,
       });
       console.log('Parsed CSV rows:', JSON.stringify(rows[0], null, 2));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('CSV parsing error:', error);
+      const errorMessage: string =
+        error instanceof Error ? error.message : 'Unknown error';
       throw new InvalidContactDataException([
-        `Failed to parse CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to parse CSV file: ${errorMessage}`,
       ]);
     }
 
@@ -281,29 +291,14 @@ export class ContactsService {
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
       try {
-        // Log the raw row data
         console.log(
           `Processing row ${index + 1}:`,
           JSON.stringify(row, null, 2),
         );
 
-        if (
-          !row['Email address'] ||
-          !row['First name'] ||
-          !row['Last name'] ||
-          !row['Position'] ||
-          !row['Organization']
-        ) {
-          const missingFields = [
-            !row['Email address'] ? 'Email address' : null,
-            !row['First name'] ? 'First name' : null,
-            !row['Last name'] ? 'Last name' : null,
-            !row['Position'] ? 'Position' : null,
-            !row['Organization'] ? 'Organization' : null,
-          ].filter(Boolean);
-
+        if (!row['Email address']) {
           errors.push(
-            `Row ${index + 1}: Missing required fields: ${missingFields.join(', ')}`,
+            `Row ${index + 1}: Missing required field: Email address`,
           );
           continue;
         }
@@ -313,7 +308,7 @@ export class ContactsService {
           domain_name:
             row['Domain name'] ||
             new URL(`http://${row['Email address'].split('@')[1]}`).hostname,
-          organization: row['Organization'],
+          organization: row['Organization'] || row['Company'] || 'Unknown',
           country: row['Country'],
           state: row['State'],
           city: row['City'],
@@ -327,10 +322,10 @@ export class ContactsService {
             ? parseInt(row['Number of sources'], 10)
             : undefined,
           pattern: row['Pattern'],
-          first_name: row['First name'],
-          last_name: row['Last name'],
+          first_name: row['First name'] || 'John',
+          last_name: row['Last name'] || 'Doe',
           department: row['Department'],
-          position: row['Position'],
+          position: row['Position'] || 'Unknown',
           twitter_handle: row['Twitter handle'] || undefined,
           linkedin_url: row['LinkedIn URL'] || undefined,
           phone_number: row['Phone number'] || undefined,
@@ -338,7 +333,6 @@ export class ContactsService {
           industry: row['Industry'],
         };
 
-        // Log the processed contact data
         console.log(
           `Processed contact data for row ${index + 1}:`,
           JSON.stringify(contactData, null, 2),

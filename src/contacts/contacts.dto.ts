@@ -31,8 +31,16 @@ export class CreateContactDto {
     example: 'Acme Corporation',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Organization is required' })
-  organization: string;
+  @IsOptional()
+  organization?: string;
+
+  @ApiProperty({
+    description: 'The company name (alternative to organization)',
+    example: 'Acme Corporation',
+  })
+  @IsString()
+  @IsOptional()
+  company?: string;
 
   @ApiPropertyOptional({
     description: 'The country of the contact',
@@ -114,16 +122,16 @@ export class CreateContactDto {
     example: 'John',
   })
   @IsString()
-  @IsNotEmpty({ message: 'First name is required' })
-  first_name: string;
+  @IsOptional()
+  first_name?: string;
 
   @ApiProperty({
     description: 'Last name of the contact',
     example: 'Doe',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Last name is required' })
-  last_name: string;
+  @IsOptional()
+  last_name?: string;
 
   @ApiPropertyOptional({
     description: 'Department of the contact',
@@ -138,8 +146,8 @@ export class CreateContactDto {
     example: 'Software Engineer',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Position is required' })
-  position: string;
+  @IsOptional()
+  position?: string;
 
   @ApiPropertyOptional({
     description: 'Twitter handle of the contact',
