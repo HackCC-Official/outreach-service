@@ -103,22 +103,89 @@ export class ContactsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all contacts with pagination' })
-  @ApiQuery({ name: 'skip', required: false, type: Number })
-  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiOperation({
+    summary: 'Get all contacts with pagination',
+    description:
+      'Endpoint accepts page-based pagination. Example: /outreach-service/contacts?page=3&limit=100',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (starts from 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Returns an array of contacts and total count',
-    type: [Contact],
+    description: 'Returns an array of contacts and pagination information',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/Contact' },
+        },
+        total: {
+          type: 'number',
+          description: 'Total number of contacts',
+          example: 100,
+        },
+        page: {
+          type: 'number',
+          description: 'Current page',
+          example: 3,
+        },
+        pageCount: {
+          type: 'number',
+          description: 'Total number of pages',
+          example: 10,
+        },
+        limit: {
+          type: 'number',
+          description: 'Number of items per page',
+          example: 10,
+        },
+      },
+    },
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   async findAll(
-    @Query('skip', new ParseIntPipe({ optional: true })) skip?: number,
-    @Query('take', new ParseIntPipe({ optional: true })) take?: number,
-  ): Promise<{ data: Contact[]; total: number }> {
-    const [data, total] = await this.contactsService.findAll(skip, take);
-    return { data, total };
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    pageCount: number;
+    limit: number;
+  }> {
+    const currentPage = page && page > 0 ? page : 1;
+    const itemsPerPage = limit && limit > 0 ? limit : 10;
+
+    const skip = (currentPage - 1) * itemsPerPage;
+
+    const [data, total] = await this.contactsService.findAll(
+      skip,
+      itemsPerPage,
+    );
+
+    const pageCount = Math.ceil(total / itemsPerPage);
+
+    return {
+      data,
+      total,
+      page: currentPage,
+      pageCount,
+      limit: itemsPerPage,
+    };
   }
 
   @Get('search')
