@@ -66,17 +66,40 @@ export class ContactsController {
     description: 'CSV file to upload',
     type: UploadFileDto,
   })
+  @ApiResponse({
+    status: HttpStatus.ACCEPTED,
+    description: 'The CSV file has been accepted for processing.',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example:
+            'CSV upload started. Contacts will be processed in the background.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid file upload',
+  })
   @UseInterceptors(FileInterceptor('file'))
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
-  async upload(
-    @UploadedFile() file: Express.Multer.File,
-  ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
+  @HttpCode(HttpStatus.ACCEPTED)
+  upload(@UploadedFile() file: Express.Multer.File): { message: string } {
     if (!file || typeof file !== 'object') {
       throw new BadRequestException('Invalid file upload');
     }
     const uploadedFile = file as { buffer: Buffer };
-    return await this.contactsService.uploadContacts(uploadedFile.buffer);
+
+    this.contactsService.processContactsUpload(uploadedFile.buffer);
+
+    return {
+      message:
+        'CSV upload started. Contacts will be processed in the background.',
+    };
   }
 
   @Get()

@@ -9,7 +9,6 @@ import { SupabaseService } from '../auth/supabase.service';
 import {
   PostgrestResponse,
   PostgrestSingleResponse,
-  PostgrestError,
 } from '@supabase/supabase-js';
 import { parse } from 'csv-parse/sync';
 
@@ -84,16 +83,37 @@ export class ContactsService {
 
     await this.checkDuplicateEmail(createContactDto.email);
 
+    let organizationValue = 'Unknown';
+    if (
+      typeof createContactDto.organization === 'string' &&
+      createContactDto.organization
+    ) {
+      organizationValue = createContactDto.organization;
+    } else if (
+      typeof createContactDto.company === 'string' &&
+      createContactDto.company
+    ) {
+      organizationValue = createContactDto.company as string;
+    }
+
     const contactData = {
       ...createContactDto,
       email: this.normalizeEmail(createContactDto.email),
       created_at: new Date().toISOString(),
       been_contacted: false,
-      organization:
-        createContactDto.organization || createContactDto.company || 'Unknown',
-      first_name: createContactDto.first_name || 'John',
-      last_name: createContactDto.last_name || 'Doe',
-      position: createContactDto.position || 'Unknown',
+      organization: organizationValue,
+      first_name:
+        typeof createContactDto.first_name === 'string'
+          ? createContactDto.first_name
+          : 'John',
+      last_name:
+        typeof createContactDto.last_name === 'string'
+          ? createContactDto.last_name
+          : 'Doe',
+      position:
+        typeof createContactDto.position === 'string'
+          ? createContactDto.position
+          : 'Unknown',
     };
 
     delete contactData.company;
@@ -274,7 +294,7 @@ export class ContactsService {
         trim: true,
         skip_empty_lines: true,
         relaxColumnCount: true,
-      });
+      }) as ParsedContactRow[];
       console.log('Parsed CSV rows:', JSON.stringify(rows[0], null, 2));
     } catch (error: unknown) {
       console.error('CSV parsing error:', error);
@@ -355,5 +375,29 @@ export class ContactsService {
       }
     }
     return { createdContacts, errors };
+  }
+
+  /**
+   * Starts the processing of contacts from a CSV file buffer in the background.
+   * This method returns immediately while processing continues asynchronously.
+   * @param fileBuffer - The CSV file buffer uploaded by the user
+   */
+  processContactsUpload(fileBuffer: Buffer): void {
+    this.uploadContacts(fileBuffer)
+      .then(({ createdContacts, errors }) => {
+        this.logger.log(
+          `CSV processing completed: ${createdContacts.length} contacts created with ${errors.length} errors`,
+        );
+        if (errors.length > 0) {
+          this.logger.warn(`Upload errors: ${JSON.stringify(errors)}`);
+        }
+      })
+      .catch((error: unknown) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Unknown error processing CSV';
+        this.logger.error(`Failed to process CSV: ${errorMessage}`);
+      });
   }
 }
