@@ -200,8 +200,8 @@ export class ContactsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid search query',
   })
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   search(@Query('query') query: string): Promise<Contact[]> {
     return this.contactsService.search(query);
   }

@@ -111,7 +111,7 @@ export class InterestedUsersService {
       });
 
       const emailDto: SendEmailDto = {
-        from: 'support@hackcc.net',
+        from: 'info@hackcc.net',
         to: [{ email: recipientEmail }],
         subject: 'Thank you for your interest in HackCC!',
         html: emailHtml,

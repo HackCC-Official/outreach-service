@@ -93,7 +93,7 @@ export class ContactsService {
       typeof createContactDto.company === 'string' &&
       createContactDto.company
     ) {
-      organizationValue = createContactDto.company as string;
+      organizationValue = createContactDto.company;
     }
 
     const contactData = {
@@ -237,7 +237,7 @@ export class ContactsService {
       .from(this.TABLE_NAME)
       .select('*')
       .or(
-        `name.ilike.${searchQuery},email.ilike.${searchQuery},company.ilike.${searchQuery}`,
+        `first_name.ilike.${searchQuery},last_name.ilike.${searchQuery},email.ilike.${searchQuery},organization.ilike.${searchQuery}`,
       )
       .order('created_at', { ascending: false })
       .limit(10);
