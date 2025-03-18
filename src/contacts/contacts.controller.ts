@@ -85,8 +85,8 @@ export class ContactsController {
     description: 'Invalid file upload',
   })
   @UseInterceptors(FileInterceptor('file'))
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @HttpCode(HttpStatus.ACCEPTED)
   upload(@UploadedFile() file: Express.Multer.File): { message: string } {
     if (!file || typeof file !== 'object') {
