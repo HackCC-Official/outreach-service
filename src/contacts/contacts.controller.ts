@@ -85,8 +85,8 @@ export class ContactsController {
     description: 'Invalid file upload',
   })
   @UseInterceptors(FileInterceptor('file'))
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   @HttpCode(HttpStatus.ACCEPTED)
   upload(@UploadedFile() file: Express.Multer.File): { message: string } {
     if (!file || typeof file !== 'object') {
@@ -200,8 +200,8 @@ export class ContactsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid search query',
   })
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
   search(@Query('query') query: string): Promise<Contact[]> {
     return this.contactsService.search(query);
   }

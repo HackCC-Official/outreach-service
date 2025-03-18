@@ -114,6 +114,11 @@ export class ContactsService {
         typeof createContactDto.position === 'string'
           ? createContactDto.position
           : 'Unknown',
+      confidence_score:
+        typeof createContactDto.confidence_score === 'number' &&
+        !isNaN(createContactDto.confidence_score)
+          ? createContactDto.confidence_score
+          : 0,
     };
 
     delete contactData.company;
@@ -335,8 +340,11 @@ export class ContactsService {
           postal_code: row['Postal code'],
           street: row['Street'],
           confidence_score: row['Confidence score']
-            ? parseFloat(row['Confidence score'])
-            : undefined,
+            ? (() => {
+                const score = parseFloat(row['Confidence score']);
+                return !isNaN(score) ? score : 0;
+              })()
+            : 0,
           type: row['Type'],
           number_of_sources: row['Number of sources']
             ? parseInt(row['Number of sources'], 10)
