@@ -7,35 +7,36 @@ import {
   IsNumber,
   Min,
   Max,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateContactDto {
-  @ApiProperty({
-    description: 'The email address of the contact',
-    example: 'john.doe@example.com',
-  })
-  @IsEmail({}, { message: 'Invalid email format' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email: string;
-
-  @ApiProperty({
-    description: 'The domain name extracted from email',
-    example: 'example.com',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Domain name is required' })
-  domain_name: string;
-
-  @ApiProperty({
-    description: 'The organization/company name',
-    example: 'Acme Corporation',
+  @ApiPropertyOptional({
+    description: 'The liaison assigned to this contact',
+    example: 'Jane Smith',
   })
   @IsString()
   @IsOptional()
-  organization?: string;
+  liaison?: string;
 
-  @ApiProperty({
-    description: 'The company name (alternative to organization)',
+  @ApiPropertyOptional({
+    description: 'Current status of the contact engagement',
+    example: 'Active',
+  })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Method of meeting with the contact',
+    example: 'Video Call',
+  })
+  @IsString()
+  @IsOptional()
+  meeting_method?: string;
+
+  @ApiPropertyOptional({
+    description: 'The company name of the contact',
     example: 'Acme Corporation',
   })
   @IsString()
@@ -43,105 +44,14 @@ export class CreateContactDto {
   company?: string;
 
   @ApiPropertyOptional({
-    description: 'The country of the contact',
-    example: 'United States',
+    description: 'Full name of the contact',
+    example: 'John Doe',
   })
   @IsString()
   @IsOptional()
-  country?: string;
+  contact_name?: string;
 
   @ApiPropertyOptional({
-    description: 'The state/province of the contact',
-    example: 'California',
-  })
-  @IsString()
-  @IsOptional()
-  state?: string;
-
-  @ApiPropertyOptional({
-    description: 'The city of the contact',
-    example: 'San Francisco',
-  })
-  @IsString()
-  @IsOptional()
-  city?: string;
-
-  @ApiPropertyOptional({
-    description: 'The postal code of the contact',
-    example: '94105',
-  })
-  @IsString()
-  @IsOptional()
-  postal_code?: string;
-
-  @ApiPropertyOptional({
-    description: 'The street address of the contact',
-    example: '123 Main St',
-  })
-  @IsString()
-  @IsOptional()
-  street?: string;
-
-  @ApiPropertyOptional({
-    description: 'Confidence score of the contact data (1-100)',
-    example: 95,
-  })
-  @IsNumber()
-  @Min(1, { message: 'Confidence score must be at least 1' })
-  @Max(100, { message: 'Confidence score must not exceed 100' })
-  @IsOptional()
-  confidence_score?: number;
-
-  @ApiPropertyOptional({
-    description: 'Type of contact',
-    example: 'Business',
-  })
-  @IsString()
-  @IsOptional()
-  type?: string;
-
-  @ApiPropertyOptional({
-    description: 'Number of sources this contact was found in',
-    example: 3,
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  number_of_sources?: number;
-
-  @ApiPropertyOptional({
-    description: 'Pattern used to identify this contact',
-    example: 'firstname.lastname@domain.com',
-  })
-  @IsString()
-  @IsOptional()
-  pattern?: string;
-
-  @ApiProperty({
-    description: 'First name of the contact',
-    example: 'John',
-  })
-  @IsString()
-  @IsOptional()
-  first_name?: string;
-
-  @ApiProperty({
-    description: 'Last name of the contact',
-    example: 'Doe',
-  })
-  @IsString()
-  @IsOptional()
-  last_name?: string;
-
-  @ApiPropertyOptional({
-    description: 'Department of the contact',
-    example: 'Engineering',
-  })
-  @IsString()
-  @IsOptional()
-  department?: string;
-
-  @ApiProperty({
     description: 'Position/role of the contact',
     example: 'Software Engineer',
   })
@@ -149,13 +59,13 @@ export class CreateContactDto {
   @IsOptional()
   position?: string;
 
-  @ApiPropertyOptional({
-    description: 'Twitter handle of the contact',
-    example: '@johndoe',
+  @ApiProperty({
+    description: 'The email address of the contact',
+    example: 'john.doe@example.com',
   })
-  @IsString()
-  @IsOptional()
-  twitter_handle?: string;
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email_address: string;
 
   @ApiPropertyOptional({
     description: 'LinkedIn URL of the contact',
@@ -163,7 +73,7 @@ export class CreateContactDto {
   })
   @IsString()
   @IsOptional()
-  linkedin_url?: string;
+  linkedin?: string;
 
   @ApiPropertyOptional({
     description: 'Phone number of the contact',
@@ -174,29 +84,31 @@ export class CreateContactDto {
   phone_number?: string;
 
   @ApiPropertyOptional({
-    description: 'Type of company',
-    example: 'Corporation',
+    description: 'The country of the contact',
+    example: 'United States',
   })
   @IsString()
   @IsOptional()
-  company_type?: string;
+  country?: string;
 
   @ApiPropertyOptional({
-    description: 'Industry of the company',
-    example: 'Technology',
+    description: 'Company website URL',
+    example: 'https://example.com',
   })
-  @IsString()
+  @IsUrl({}, { message: 'Invalid website URL format' })
   @IsOptional()
-  industry?: string;
+  website?: string;
+
+  @ApiPropertyOptional({
+    description: 'Confidence score of the contact data (1-100)',
+    example: 95,
+  })
+  @IsNumber()
+  @Min(1, { message: 'Confidence score must be at least 1' })
+  @Max(100, { message: 'Confidence score must not exceed 100' })
+  @IsOptional()
+  confidence_score?: number;
 }
 
 // UpdateContactDto makes all fields optional
-export class UpdateContactDto extends PartialType(CreateContactDto) {
-  @ApiPropertyOptional({
-    description: 'Whether the contact has been contacted',
-    example: false,
-    default: false,
-  })
-  @IsOptional()
-  been_contacted?: boolean;
-}
+export class UpdateContactDto extends PartialType(CreateContactDto) {}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Injectable, Logger } from '@nestjs/common';
 import { Contact } from './contacts.entity';
 import { CreateContactDto, UpdateContactDto } from './contacts.dto';
@@ -42,13 +43,19 @@ export class ContactsService {
     const query = supabase
       .from(this.TABLE_NAME)
       .select('id')
-      .eq('email', this.normalizeEmail(email));
+      .eq('email_address', this.normalizeEmail(email));
     if (excludeId !== undefined) {
       query.neq('id', excludeId);
     }
-    const { data }: PostgrestSingleResponse<{ id: number }> =
-      await query.single();
-    if (data) {
+    const { data, error } = await query;
+
+    // If we have an error, it's not about duplicate emails
+    if (error) {
+      throw new InvalidContactDataException([error.message]);
+    }
+
+    // If we have data and it's not empty, we found a duplicate
+    if (data && data.length > 0) {
       throw new DuplicateContactException(email);
     }
   }
@@ -64,7 +71,10 @@ export class ContactsService {
     fallbackMessage: string,
   ): T {
     if (result.error || !result.data) {
-      const errorMessage: string = result.error?.message || fallbackMessage;
+      const errorMessage: string =
+        typeof result.error?.message === 'string'
+          ? result.error.message
+          : fallbackMessage;
       throw new InvalidContactDataException([errorMessage]);
     }
     return result.data;
@@ -81,47 +91,13 @@ export class ContactsService {
       `Creating contact using environment: ${this.supabaseService.getCurrentEnvironment()}`,
     );
 
-    await this.checkDuplicateEmail(createContactDto.email);
-
-    let organizationValue = 'Unknown';
-    if (
-      typeof createContactDto.organization === 'string' &&
-      createContactDto.organization
-    ) {
-      organizationValue = createContactDto.organization;
-    } else if (
-      typeof createContactDto.company === 'string' &&
-      createContactDto.company
-    ) {
-      organizationValue = createContactDto.company;
-    }
+    await this.checkDuplicateEmail(createContactDto.email_address);
 
     const contactData = {
       ...createContactDto,
-      email: this.normalizeEmail(createContactDto.email),
+      email_address: this.normalizeEmail(createContactDto.email_address),
       created_at: new Date().toISOString(),
-      been_contacted: false,
-      organization: organizationValue,
-      first_name:
-        typeof createContactDto.first_name === 'string'
-          ? createContactDto.first_name
-          : 'John',
-      last_name:
-        typeof createContactDto.last_name === 'string'
-          ? createContactDto.last_name
-          : 'Doe',
-      position:
-        typeof createContactDto.position === 'string'
-          ? createContactDto.position
-          : 'Unknown',
-      confidence_score:
-        typeof createContactDto.confidence_score === 'number' &&
-        !isNaN(createContactDto.confidence_score)
-          ? createContactDto.confidence_score
-          : 0,
     };
-
-    delete contactData.company;
 
     const createResult: PostgrestSingleResponse<Contact> = await supabase
       .from(this.TABLE_NAME)
@@ -186,15 +162,17 @@ export class ContactsService {
   ): Promise<Contact> {
     const supabase = this.supabaseService.getClient();
 
-    if (updateContactDto.email !== undefined) {
-      await this.checkDuplicateEmail(updateContactDto.email, id);
+    if (updateContactDto.email_address !== undefined) {
+      await this.checkDuplicateEmail(updateContactDto.email_address, id);
     }
 
     const updateData: Partial<Contact> = {
       ...updateContactDto,
     };
-    if (updateContactDto.email !== undefined) {
-      updateData.email = this.normalizeEmail(updateContactDto.email);
+    if (updateContactDto.email_address !== undefined) {
+      updateData.email_address = this.normalizeEmail(
+        updateContactDto.email_address,
+      );
     }
 
     const updateResult: PostgrestSingleResponse<Contact> = await supabase
@@ -226,7 +204,7 @@ export class ContactsService {
   }
 
   /**
-   * Search contacts by name, email, or company
+   * Search contacts by name, email, company, etc.
    * @param query - The search query
    * @returns Array of matching contacts
    */
@@ -242,7 +220,7 @@ export class ContactsService {
       .from(this.TABLE_NAME)
       .select('*')
       .or(
-        `first_name.ilike.${searchQuery},last_name.ilike.${searchQuery},email.ilike.${searchQuery},organization.ilike.${searchQuery}`,
+        `contact_name.ilike.${searchQuery},email_address.ilike.${searchQuery},company.ilike.${searchQuery},position.ilike.${searchQuery}`,
       )
       .order('created_at', { ascending: false })
       .limit(10);
@@ -268,28 +246,18 @@ export class ContactsService {
     fileBuffer: Buffer,
   ): Promise<{ createdContacts: Contact[]; errors: string[] }> {
     interface ParsedContactRow {
-      'Email address': string;
-      'Domain name': string;
-      Organization?: string;
+      Liaison?: string;
+      Status?: string;
+      'Meeting Method'?: string;
       Company?: string;
-      Country: string;
-      State: string;
-      City: string;
-      'Postal code': string;
-      Street: string;
-      'Confidence score': string;
-      Type: string;
-      'Number of sources': string;
-      Pattern: string;
-      'First name'?: string;
-      'Last name'?: string;
-      Department: string;
+      'Contact Name'?: string;
       Position?: string;
-      'Twitter handle': string;
-      'LinkedIn URL': string;
-      'Phone number': string;
-      'Company type': string;
-      Industry: string;
+      'Email address'?: string;
+      LinkedIn?: string;
+      'Phone Number'?: string;
+      Country?: string;
+      Website?: string;
+      'Confidence Score'?: string;
     }
 
     let rows: ParsedContactRow[];
@@ -329,36 +297,20 @@ export class ContactsService {
         }
 
         const contactData = {
-          email: row['Email address'],
-          domain_name:
-            row['Domain name'] ||
-            new URL(`http://${row['Email address'].split('@')[1]}`).hostname,
-          organization: row['Organization'] || row['Company'] || 'Unknown',
+          liaison: row['Liaison'],
+          status: row['Status'],
+          meeting_method: row['Meeting Method'],
+          company: row['Company'],
+          contact_name: row['Contact Name'],
+          position: row['Position'],
+          email_address: row['Email address'],
+          linkedin: row['LinkedIn'],
+          phone_number: row['Phone Number'],
           country: row['Country'],
-          state: row['State'],
-          city: row['City'],
-          postal_code: row['Postal code'],
-          street: row['Street'],
-          confidence_score: row['Confidence score']
-            ? (() => {
-                const score = parseFloat(row['Confidence score']);
-                return !isNaN(score) ? score : 0;
-              })()
-            : 0,
-          type: row['Type'],
-          number_of_sources: row['Number of sources']
-            ? parseInt(row['Number of sources'], 10)
+          website: row['Website'],
+          confidence_score: row['Confidence Score']
+            ? parseFloat(row['Confidence Score'])
             : undefined,
-          pattern: row['Pattern'],
-          first_name: row['First name'] || 'John',
-          last_name: row['Last name'] || 'Doe',
-          department: row['Department'],
-          position: row['Position'] || 'Unknown',
-          twitter_handle: row['Twitter handle'] || undefined,
-          linkedin_url: row['LinkedIn URL'] || undefined,
-          phone_number: row['Phone number'] || undefined,
-          company_type: row['Company type'],
-          industry: row['Industry'],
         };
 
         console.log(
@@ -366,7 +318,7 @@ export class ContactsService {
           JSON.stringify(contactData, null, 2),
         );
 
-        const contact = await this.create(contactData);
+        const contact = await this.create(contactData as CreateContactDto);
         createdContacts.push(contact);
       } catch (error) {
         console.error(`Error processing row ${index + 1}:`, error);
