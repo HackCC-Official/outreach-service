@@ -7,7 +7,6 @@ import {
   IsNumber,
   Min,
   Max,
-  IsUrl,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -95,7 +94,6 @@ export class CreateContactDto {
     description: 'Company website URL',
     example: 'https://example.com',
   })
-  @IsUrl({}, { message: 'Invalid website URL format' })
   @IsOptional()
   website?: string;
 
