@@ -5,12 +5,25 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
-import { SendEmailDto, SendBatchEmailsDto, UpdateEmailDto } from './emails.dto';
+import {
+  SendEmailDto,
+  SendBatchEmailsDto,
+  UpdateEmailDto,
+  EmailAttachment,
+} from './emails.dto';
 import { Email } from './emails.entity';
 
 interface ResendResponse {
   data: { id: string } | null;
   error: Error | null;
+}
+
+interface ResendBatchItem {
+  from: string;
+  to: string[];
+  subject: string;
+  html: string;
+  attachments?: EmailAttachment[];
 }
 
 @Injectable()
@@ -76,41 +89,127 @@ export class EmailsService {
     sendBatchEmailsDto: SendBatchEmailsDto,
   ): Promise<Email[]> {
     try {
-      const batchPayload = sendBatchEmailsDto.emails.map((emailDto) => ({
-        from: emailDto.from,
-        to: emailDto.to.map((recipient) => recipient.email),
-        subject: emailDto.subject,
-        html: emailDto.html,
-        ...(emailDto.attachments && { attachments: emailDto.attachments }),
-      }));
+      const startTime = Date.now();
+      const batchSize = sendBatchEmailsDto.emails.length;
+      console.log(`Starting batch email operation with ${batchSize} emails`);
 
-      const response = await this.resend.batch.send(batchPayload);
-
-      if (!response || response.error) {
-        throw new Error(
-          response?.error?.message ?? 'Failed to send batch emails',
-        );
-      }
-
-      const sentEmails: Email[] = sendBatchEmailsDto.emails.map(
-        (emailDto, index) => ({
-          id: `batch-${index}-${Date.now()}`,
+      // Optimize payload preparation
+      const batchPayload: ResendBatchItem[] = sendBatchEmailsDto.emails.map(
+        (emailDto) => ({
           from: emailDto.from,
-          to: emailDto.to.map((r) => r.email),
+          to: emailDto.to.map((recipient) => recipient.email),
           subject: emailDto.subject,
           html: emailDto.html,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          status: 'delivered',
+          ...(emailDto.attachments && { attachments: emailDto.attachments }),
         }),
       );
 
-      sentEmails.forEach((email) => {
-        this.emailStore.set(email.id, email);
-      });
+      // Check batch size and split if necessary
+      const MAX_BATCH_SIZE = 20; // Reduced from 25 to 20 for better reliability
+      const batches: ResendBatchItem[][] = [];
+
+      for (let i = 0; i < batchPayload.length; i += MAX_BATCH_SIZE) {
+        batches.push(batchPayload.slice(i, i + MAX_BATCH_SIZE));
+      }
+
+      console.log(
+        `Split into ${batches.length} sub-batches of max ${MAX_BATCH_SIZE} emails each`,
+      );
+
+      const sentEmails: Email[] = [];
+      let failedBatches = 0;
+
+      // Process each batch with retries
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const MAX_RETRIES = 2;
+        let retryCount = 0;
+        let success = false;
+
+        while (!success && retryCount <= MAX_RETRIES) {
+          try {
+            console.log(
+              `Processing batch ${batchIndex + 1}/${batches.length} (attempt ${retryCount + 1})`,
+            );
+            const batchStartTime = Date.now();
+
+            const response = await this.resend.batch.send(batch);
+
+            if (!response || response.error) {
+              const errorMessage =
+                response?.error?.message ?? 'Failed to send batch emails';
+              console.error(`Batch ${batchIndex + 1} error: ${errorMessage}`);
+              throw new Error(errorMessage);
+            }
+
+            // Map the responses to Email entities
+            const batchEmails: Email[] = batch.map((email, index) => ({
+              id: `batch-${sentEmails.length + index}-${Date.now()}`,
+              from: email.from,
+              to: email.to,
+              subject: email.subject,
+              html: email.html,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              status: 'delivered',
+            }));
+
+            // Store emails and add to result array
+            batchEmails.forEach((email) => {
+              this.emailStore.set(email.id, email);
+              sentEmails.push(email);
+            });
+
+            const batchDuration = Date.now() - batchStartTime;
+            console.log(
+              `Batch ${batchIndex + 1} completed successfully in ${batchDuration}ms`,
+            );
+            success = true;
+          } catch (error) {
+            retryCount++;
+            console.error(
+              `Batch ${batchIndex + 1} failed (attempt ${retryCount}/${MAX_RETRIES + 1}):`,
+              error instanceof Error ? error.message : 'Unknown error',
+            );
+
+            if (retryCount <= MAX_RETRIES) {
+              const delay = 2000 * retryCount; // Exponential backoff
+              console.log(`Retrying batch ${batchIndex + 1} in ${delay}ms...`);
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            } else {
+              failedBatches++;
+              console.error(
+                `Batch ${batchIndex + 1} failed after ${MAX_RETRIES + 1} attempts, moving to next batch`,
+              );
+            }
+          }
+        }
+
+        // Add a small delay between batches to avoid rate limiting
+        if (batchIndex < batches.length - 1) {
+          const delay = batches.length > 5 ? 2000 : 1000; // Longer delays for larger total batches
+          console.log(`Waiting ${delay}ms before processing next batch...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+
+      const totalDuration = Date.now() - startTime;
+      console.log(
+        `Batch email operation completed in ${totalDuration}ms. ${sentEmails.length} sent, ${failedBatches} batches failed.`,
+      );
+
+      if (failedBatches > 0) {
+        console.warn(
+          `Note: ${failedBatches} out of ${batches.length} batches failed to send.`,
+        );
+      }
 
       return sentEmails;
     } catch (error: unknown) {
+      console.error(
+        'Email batch sending failed completely:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
       throw new InternalServerErrorException(
         `Failed to send batch emails: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

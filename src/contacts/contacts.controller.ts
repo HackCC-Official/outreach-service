@@ -122,6 +122,13 @@ export class ContactsController {
     description: 'Number of items per page',
     example: 10,
   })
+  @ApiQuery({
+    name: 'liaison',
+    required: false,
+    type: String,
+    description: 'Filter contacts by liaison name',
+    example: 'Jane Smith',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Returns an array of contacts and pagination information',
@@ -160,6 +167,7 @@ export class ContactsController {
   async findAll(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('liaison') liaison?: string,
   ): Promise<{
     data: Contact[];
     total: number;
@@ -175,6 +183,7 @@ export class ContactsController {
     const [data, total] = await this.contactsService.findAll(
       skip,
       itemsPerPage,
+      liaison,
     );
 
     const pageCount = Math.ceil(total / itemsPerPage);

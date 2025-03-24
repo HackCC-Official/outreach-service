@@ -31,6 +31,31 @@ export class OutreachTeamService {
   }
 
   /**
+   * Find a team member by email
+   * @param email - The team member's email address
+   * @returns The found team member
+   */
+  async findByEmail(email: string): Promise<OutreachTeam> {
+    const supabase = this.supabaseService.getClient();
+    const normalizedEmail = this.normalizeEmail(email);
+
+    const { data, error }: PostgrestSingleResponse<OutreachTeam> =
+      await supabase
+        .from(this.TABLE_NAME)
+        .select('*')
+        .eq('email', normalizedEmail)
+        .single();
+
+    if (error || !data) {
+      throw new InvalidContactDataException([
+        `Team member with email ${email} not found`,
+      ]);
+    }
+
+    return data;
+  }
+
+  /**
    * Checks for duplicate email in the OutreachTeam table.
    * If a duplicate is found, it throws a DuplicateContactException.
    * @param email - The email to check.

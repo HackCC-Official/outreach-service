@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Injectable, Logger } from '@nestjs/common';
 import { Contact } from './contacts.entity';
 import { CreateContactDto, UpdateContactDto } from './contacts.dto';
@@ -112,16 +111,27 @@ export class ContactsService {
    * Find all contacts with optional pagination
    * @param skip - Number of records to skip
    * @param take - Number of records to take
+   * @param liaison - Optional filter for liaison
    * @returns Array of contacts and total count
    */
-  async findAll(skip = 0, take = 10): Promise<[Contact[], number]> {
+  async findAll(
+    skip = 0,
+    take = 10,
+    liaison?: string,
+  ): Promise<[Contact[], number]> {
     const supabase = this.supabaseService.getClient();
 
-    const { data, error, count }: PostgrestResponse<Contact> = await supabase
+    let query = supabase
       .from(this.TABLE_NAME)
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(skip, skip + take - 1);
+      .order('created_at', { ascending: false });
+
+    if (liaison) {
+      query = query.eq('liaison', liaison);
+    }
+
+    const { data, error, count }: PostgrestResponse<Contact> =
+      await query.range(skip, skip + take - 1);
 
     if (error) {
       throw new InvalidContactDataException([error.message]);

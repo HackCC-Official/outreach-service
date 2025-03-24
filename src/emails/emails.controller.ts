@@ -6,6 +6,7 @@ import {
   Post,
   Put,
   UseGuards,
+  PayloadTooLargeException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -55,7 +56,9 @@ export class EmailsController {
     summary: 'Send multiple emails in batch',
     description: `Sends multiple emails in a single batch operation using Resend's batch API.
     Each email in the batch is processed separately but in a single API call, 
-    improving performance for bulk email sending.`,
+    improving performance for bulk email sending.
+    Note: This endpoint supports payloads up to 50MB. For larger batches, 
+    consider splitting them into multiple requests of 20-25 emails per batch.`,
   })
   @ApiBody({
     type: SendBatchEmailsDto,
@@ -89,6 +92,10 @@ export class EmailsController {
     type: [Email],
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({
+    status: 413,
+    description: 'Request entity too large - try reducing batch size',
+  })
   @ApiResponse({ status: 500, description: 'Failed to send batch emails' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
@@ -96,6 +103,12 @@ export class EmailsController {
   async sendBatchEmails(
     @Body() sendBatchEmailsDto: SendBatchEmailsDto,
   ): Promise<Email[]> {
+    // Verify batch size is reasonable
+    if (sendBatchEmailsDto.emails.length > 50) {
+      throw new PayloadTooLargeException(
+        'Batch size too large. Please limit to 50 emails per request.',
+      );
+    }
     return this.emailsService.sendBatchEmails(sendBatchEmailsDto);
   }
 

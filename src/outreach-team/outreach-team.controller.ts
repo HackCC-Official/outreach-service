@@ -94,6 +94,24 @@ export class OutreachTeamController {
     return this.outreachTeamService.findOne(id);
   }
 
+  @Get('email/:email')
+  @ApiOperation({ summary: 'Get a team member by email' })
+  @ApiParam({ name: 'email', required: true, description: 'Team Member Email' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns the team member',
+    type: OutreachTeam,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Team member not found',
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([AccountRoles.ADMIN, AccountRoles.ORGANIZER])
+  findByEmail(@Param('email') email: string): Promise<OutreachTeam> {
+    return this.outreachTeamService.findByEmail(email);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update a team member' })
   @ApiParam({ name: 'id', required: true, description: 'Team Member ID' })
