@@ -8,11 +8,13 @@ import { OutreachTeamModule } from './outreach-team/outreach-team.module';
 import { AuthModule } from './auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthLoggerMiddleware } from './auth/auth.middleware';
+import { SponsorsModule } from './sponsors/sponsors.module';
 
 @Module({
   imports: [
     ContactsModule,
     EmailsModule,
+    SponsorsModule,
     InterestedUsersModule,
     OutreachTeamModule,
     AuthModule,

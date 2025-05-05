@@ -103,7 +103,7 @@ async function bootstrap(): Promise<void> {
 
   logger.log(`Swagger documentation available at /${docsPath}`);
 
-  const port = 3000;
+  const port = 3001;
   await app.listen(port);
   logger.log(`Application listening on port ${port}`);
 }
